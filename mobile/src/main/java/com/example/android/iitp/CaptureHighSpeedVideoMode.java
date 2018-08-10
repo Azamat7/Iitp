@@ -40,6 +40,7 @@ import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.v13.app.FragmentCompat;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Base64;
 import android.util.Log;
 import android.util.Range;
@@ -87,6 +88,13 @@ public class CaptureHighSpeedVideoMode  extends Fragment
     private static final String[] VIDEO_PERMISSIONS = {
             Manifest.permission.CAMERA,
             Manifest.permission.RECORD_AUDIO,
+    };
+
+    // Storage Permissions
+    private static final int REQUEST_EXTERNAL_STORAGE = 2;
+    private static String[] PERMISSIONS_STORAGE = {
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
     };
 
     static {
@@ -463,7 +471,18 @@ public class CaptureHighSpeedVideoMode  extends Fragment
                 ErrorDialog.newInstance(getString(Integer.parseInt("0")))
                         .show(getChildFragmentManager(), FRAGMENT_DIALOG);
             }
-        } else {
+        } else if ( requestCode == REQUEST_EXTERNAL_STORAGE) {
+            // If request is cancelled, the result arrays are empty.
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                try {
+                    setUpMediaRecorder();
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            } else {
+            }
+        }else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
@@ -753,13 +772,11 @@ public class CaptureHighSpeedVideoMode  extends Fragment
      * @return path + filename
      */
     private File getVideoFile(Context context) {
-
         String root = Environment.getExternalStorageDirectory().toString();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
         currentDateAndTime = sdf.format(new Date());
         File myDir = new File(root + "/MSD/" + currentDateAndTime);
         myDir.mkdirs();
-
         return new File(myDir, "VIDEO" + ".webm");
     }
 
@@ -770,7 +787,15 @@ public class CaptureHighSpeedVideoMode  extends Fragment
             mIsRecordingVideo = true;
             mRecButtonVideo.setText("Stop");
             surfaces.clear();
-            setUpMediaRecorder();
+            if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) { // Permission is not granted
+
+                ActivityCompat.requestPermissions(getActivity(),
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        0);
+            }else{ // Permission is granted
+                setUpMediaRecorder();
+            }
             SurfaceTexture texture = mTextureView.getSurfaceTexture();
             assert texture != null;
             texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
@@ -779,7 +804,6 @@ public class CaptureHighSpeedVideoMode  extends Fragment
             Surface previewSurface = new Surface(texture);
             surfaces.add(previewSurface);
             mPreviewBuilder.addTarget(previewSurface);
-
             Surface recorderSurface = mMediaRecorder.getSurface();
             surfaces.add(recorderSurface);
             mPreviewBuilder.addTarget(recorderSurface);
@@ -902,7 +926,7 @@ public class CaptureHighSpeedVideoMode  extends Fragment
 ////            // wait
 ////        }
 
-        while(ServerConnectionActivity.mServerDataModel.getIsTimeReceived()){
+        while(ServerConnectionActivity.mServerDataModel == null){
             // wait
         }
 

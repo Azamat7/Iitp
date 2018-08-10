@@ -134,9 +134,6 @@ public class ServerConnectionActivity extends AppCompatActivity implements Adapt
 
             String message = intent.getStringExtra("message");
             mServerDataModel = new ServerDataModel(message);
-
-            Log.d("wearData",message);
-
         }
     }
 

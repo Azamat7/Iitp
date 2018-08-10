@@ -52,13 +52,6 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
     private static final String TAG = "message";
 
     private Button startButton;
-    private Button stopButton;
-    private BluetoothAdapter mBluetoothAdapter;
-    //    private BluetoothConnectionService mBluetoothConnectionService;
-    private BluetoothDevice mBluetoothDevice;
-
-    private PowerManager mPowerManager;
-    private PowerManager.WakeLock mWakeLock;
     private boolean isScreenOn = true;
 
 
@@ -93,10 +86,7 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
     private ArrayList<Float> horizontalAccelerationData;
     private ArrayList<Long> timeData;
 
-    private static File GeneralData;
-    private static File VerticalAccelerationData;
-    private static File HorizontalAccelerationData;
-    private static File rotationMatrixFile;
+    private PowerManager mPowerManager;
 
     private static long lastUpdate = System.currentTimeMillis();
     private boolean isDataRecording = false;
@@ -131,43 +121,9 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
                 }
             }
         });
-//        stopButton.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                onStopButton();
-//            }
-//        });
 
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mPowerManager = (PowerManager) this.getSystemService(Context.POWER_SERVICE);
-        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-//        mBluetoothAdapter.enable();
-//        if (!mBluetoothAdapter.isEnabled()) {
-//            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-//            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-//        }
-//        if (mBluetoothAdapter != null) {
-//            if (mBluetoothAdapter.isEnabled()) {
-//                Set<BluetoothDevice> bondedDevices = mBluetoothAdapter.getBondedDevices();
-//
-//                if (bondedDevices.size() > 0) {
-//                    Object[] devices = (Object[]) bondedDevices.toArray();
-//                    mBluetoothDevice = (BluetoothDevice) devices[0];
-//                }
-//            }
-//        }
-//        Handler handler = new Handler();
-//        handler.postDelayed(new Runnable() {
-//            @Override
-//            public void run() {
-//                mBluetoothConnectionService = new BluetoothConnectionService(getApplicationContext());
-//                mBluetoothConnectionService.startClient(mBluetoothDevice, MY_UUID_INSECURE);
-//            }
-//        }, 1000);
-//        mBluetoothConnectionService = new BluetoothConnectionService(this);
-//        mBluetoothConnectionService.startClient(mBluetoothDevice, MY_UUID_INSECURE);
-//        String message = "Started!";
-//        mBluetoothConnectionService.write(message.getBytes(Charset.defaultCharset()));
 
         generalAccelerationAlongX = new ArrayList<>();
         generalAccelerationAlongY = new ArrayList<>();
@@ -214,22 +170,11 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
         Receiver messageReceiver = new Receiver();
 
         LocalBroadcastManager.getInstance(this).registerReceiver(messageReceiver, newFilter);
-
-        // -----------------------------------------------------------------
-        GeneralData = new File(path, "GeneralData.txt");
-        VerticalAccelerationData = new File(path, "VerticalAccelerationData.txt");
-        HorizontalAccelerationData = new File(path, "HorizontalAccelerationData.txt");
-        rotationMatrixFile = new File(myDir, "rotationMatrixFile.txt");
-        // -----------------------------------------------------------------
     }
 
     private void onStartButton() {
         if (!isDataRecording) {
             isDataRecording = true;
-//            String message = "Start Button Pressed!";
-//            mBluetoothConnectionService.write(message.getBytes(Charset.defaultCharset()));
-//            new TimeDataStart(this).execute();
-
 
             // sending ping message for data recording start from Client to Server phone.
             String message = "Data Start Ping!";
@@ -240,121 +185,6 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
 
             startTime = System.currentTimeMillis();
 
-//            sensorEventListener = new SensorEventListener() {
-//                float accelerometer_x, accelerometer_y, accelerometer_z;
-//                float gravity_x, gravity_y, gravity_z;
-//                float gyroscope_x, gyroscope_y, gyroscope_z;
-//                float verticalAcceleration;
-//
-//                float[] mGravity;
-//                float[] mGeomagnetic;
-//                float[] R;
-//                @Override
-//                public void onSensorChanged(SensorEvent event) {
-//                    Log.d("wearDebug","Aitosha");
-//
-//                    long currentTime = System.currentTimeMillis();
-//
-//                    if (event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
-//                        accelerometer_x = event.values[0];
-//                        accelerometer_y = event.values[1];
-//                        accelerometer_z = event.values[2];
-//                    }
-//
-//                    if (event.sensor.getType() == Sensor.TYPE_GRAVITY) {
-//                        gravity_x = -event.values[0];
-//                        gravity_y = -event.values[1];
-//                        gravity_z = -event.values[2];
-//                    }
-//
-//                    if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-//                        gyroscope_x = event.values[0];
-//                        gyroscope_y = event.values[1];
-//                        gyroscope_z = event.values[2];
-//                    }
-//
-//                    if (event.sensor.getType() == Sensor.TYPE_PROXIMITY) {
-//
-//                        if (event.values[0] == 0 && isScreenOn == true) {
-////                            turnOffScreen();
-//                        }
-//
-//                        if (event.values[0] != 0 && isScreenOn == false) {
-////                            turnOnScreen();
-//                        }
-//                    }
-//
-//                    float accelerometer_norm = (float) Math.sqrt(accelerometer_x * accelerometer_x + accelerometer_y * accelerometer_y + accelerometer_z * accelerometer_z);
-//                    float gravity_norm = (float) Math.sqrt(gravity_x * gravity_x + gravity_y * gravity_y + gravity_z * gravity_z);
-//                    float cosine = (accelerometer_x * gravity_x + accelerometer_y * gravity_y + accelerometer_z * gravity_z) / (gravity_norm * accelerometer_norm);
-//                    verticalAcceleration = accelerometer_norm * (-cosine);
-//                    float horizontalAcceleration = (float) Math.sqrt(accelerometer_norm * accelerometer_norm - verticalAcceleration * verticalAcceleration);
-//
-//
-//                    if (Float.isNaN(verticalAcceleration)) {
-//                        verticalAcceleration = 0;
-//                    }
-//
-//                    if (Float.isNaN(horizontalAcceleration)) {
-//                        horizontalAcceleration = 0;
-//                    }
-//
-//                    if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
-//                        mGravity = event.values;
-//                    if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
-//                        mGeomagnetic = event.values;
-//                    if (mGravity != null && mGeomagnetic != null) {
-//                        R = new float[9];
-//                        float I[] = new float[9];
-//                        boolean success = SensorManager.getRotationMatrix(R, I, mGravity, mGeomagnetic);
-//                        if (success) {
-//                            Log.e(TAG, "Matrix_R: " + R);
-//                        }
-//                    }
-//
-//                    if ((currentTime - lastUpdate) >= 10) {
-//
-//                        lastUpdate = currentTime;
-//
-//                        generalAccelerationAlongX.add(accelerometer_x);
-//                        generalAccelerationAlongY.add(accelerometer_y);
-//                        generalAccelerationAlongZ.add(accelerometer_z);
-//
-//                        gravityX.add(gravity_x);
-//                        gravityY.add(gravity_y);
-//                        gravityZ.add(gravity_z);
-//
-//                        gyroscopeX.add(gyroscope_x);
-//                        gyroscopeY.add(gyroscope_y);
-//                        gyroscopeZ.add(gyroscope_z);
-//
-//                        accelerometerData.add(verticalAcceleration);
-//                        horizontalAccelerationData.add(horizontalAcceleration);
-//                        timeData.add(currentTime - startTime);
-//
-//                        Log.e(TAG, "R_matrix: " + R);
-//                        rotationMatrixData.add(R);
-//
-//                        Log.d(TAG, "Time during accumulation: " + (currentTime - startTime));
-//
-////                        try {
-////                            BufferedWriter out = new BufferedWriter(new FileWriter(VerticalAccelerationData, true), 1024);
-////                            String entry = verticalAcceleration + " " + (currentTime - startTime) + "\n";
-////                            out.write(entry);
-////                            out.close();
-////                        } catch (IOException e) {
-////                            e.printStackTrace();
-////                        }
-//                    }
-//
-////                    accelerometerData.add(verticalAcceleration);
-////                    timeData.add(currentTime - startTime);
-//                }
-//
-//                @Override
-//                public void onAccuracyChanged(Sensor sensor, int accuracy) {
-//                }
-//            };
             mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_FASTEST);
             mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE), SensorManager.SENSOR_DELAY_FASTEST);
             mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY), SensorManager.SENSOR_DELAY_FASTEST);
@@ -492,49 +322,6 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
 //            new TimeDataStop(this).execute();
             Toast.makeText(getApplicationContext(), "Stopped!", Toast.LENGTH_SHORT).show();
 
-            // -----------------------------------------------------------------
-//            for (int i = 0; i < accelerometerData.size(); i++) {
-//                try {
-//                    BufferedWriter out = new BufferedWriter(new FileWriter(VerticalAccelerationData, true), 1024);
-//                    String entry = accelerometerData.get(i) + " " + timeData.get(i) + "\n";
-//                    Log.d(TAG, "Time after accumulation: " + timeData.get(i));
-//                    out.write(entry);
-//                    out.close();
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//
-//            for (int i = 0; i < horizontalAccelerationData.size(); i++) {
-//                try {
-//                    BufferedWriter out = new BufferedWriter(new FileWriter(HorizontalAccelerationData, true), 1024);
-//                    String entry = horizontalAccelerationData.get(i) + " " + timeData.get(i) + "\n";
-//                    Log.d(TAG, "Time after accumulation: " + timeData.get(i));
-//                    out.write(entry);
-//                    out.close();
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//
-//            for (int i = 0; i < rotationMatrixData.size(); i++) {
-//                try {
-//                    BufferedWriter out = new BufferedWriter(new FileWriter(rotationMatrixFile, true), 1024);
-//                    String entry = "";
-//                    if (rotationMatrixData.get(i) == null) {
-//                        continue;
-//                    }
-//                    for (int j = 0; j < rotationMatrixData.get(i).length; j++) {
-//                        entry += rotationMatrixData.get(i)[j] + " ";
-//                    }
-//                    entry += timeData.get(i) + "\n";
-//                    out.write(entry);
-//                    out.close();
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-
             int startOfJumpIndex = 0, endOfJumpIndex = 0;
 
             float min = accelerometerData.get(0), max = accelerometerData.get(0), maxIntegration = accelerometerData.get(0);
@@ -575,73 +362,73 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
 //            }
 //        }
             sendMSD();
-//            // Get an array of peaks
-//            ArrayList<Integer> peaks = new ArrayList<Integer>();
-//            peaks = detectPeaks(accelerometerDataNew, PEAK_THRESHOLD);
-//
-//            // Find a peak with maximum cumulative sum from the left
-//            float maxValueLeft = calculateCumulativeSumFromLeft(accelerometerDataNew, peaks.get(0));
-//            int maxCumulativeSumIndexLeft = peaks.get(0);
+            // Get an array of peaks
+            ArrayList<Integer> peaks = new ArrayList<Integer>();
+            peaks = detectPeaks(accelerometerDataNew, PEAK_THRESHOLD);
+
+            // Find a peak with maximum cumulative sum from the left
+            float maxValueLeft = calculateCumulativeSumFromLeft(accelerometerDataNew, peaks.get(0));
+            int maxCumulativeSumIndexLeft = peaks.get(0);
+            for (int i : peaks) {
+                if (maxValueLeft < calculateCumulativeSumFromLeft(accelerometerDataNew, i)) {
+                    maxValueLeft = calculateCumulativeSumFromLeft(accelerometerDataNew, i);
+                    maxCumulativeSumIndexLeft = i;
+                }
+            }
+
+
+            // Find a start of jump index by looking for a maximum in the subarray of accelerometerData ([:maxCumulativeSumIndexLeft + 1])
+            float helpMax = accelerometerDataNew.get(0);
+            int helpMaxIndex = 0;
+            for (int i = 0; i < maxCumulativeSumIndexLeft + 1; i++) {
+                if (accelerometerDataNew.get(i) > helpMax) {
+                    helpMax = accelerometerDataNew.get(i);
+                    helpMaxIndex = i;
+                }
+            }
+            startOfJumpIndex = helpMaxIndex;
+
+
+            // Find a max point (which is the endOfJumpIndex) before the cumulative point from the left
+            float helpMaxEnd = accelerometerDataNew.get(helpMaxIndex + 1);
+            int helpMaxIndexEnd = helpMaxIndex + 1;
+            for (int i = helpMaxIndex + 1; i < accelerometerDataNew.size(); i++) {
+                if (helpMaxEnd < accelerometerDataNew.get(i)) {
+                    helpMaxEnd = accelerometerDataNew.get(i);
+                    helpMaxIndexEnd = i;
+                }
+            }
+            endOfJumpIndex = helpMaxIndexEnd;
+
+
+//            // Find a peak with maximum cumulative sum from the right
+//            float maxValueRight = calculateCumulativeSumFromRight(accelerometerData, peaks.get(0));
+//            int maxCumulativeSumIndexRight = peaks.get(0);
 //            for (int i : peaks) {
-//                if (maxValueLeft < calculateCumulativeSumFromLeft(accelerometerDataNew, i)) {
-//                    maxValueLeft = calculateCumulativeSumFromLeft(accelerometerDataNew, i);
-//                    maxCumulativeSumIndexLeft = i;
+//                if (maxValueRight < calculateCumulativeSumFromRight(accelerometerData, i)) {
+//                    maxValueRight = calculateCumulativeSumFromRight(accelerometerData, i);
+//                    maxCumulativeSumIndexRight = i;
 //                }
 //            }
 //
-//
-//            // Find a start of jump index by looking for a maximum in the subarray of accelerometerData ([:maxCumulativeSumIndexLeft + 1])
-//            float helpMax = accelerometerDataNew.get(0);
-//            int helpMaxIndex = 0;
-//            for (int i = 0; i < maxCumulativeSumIndexLeft + 1; i++) {
-//                if (accelerometerDataNew.get(i) > helpMax) {
-//                    helpMax = accelerometerDataNew.get(i);
+//            // Find a start of jump index by looking for a maximum in the subarray of accelerometerData ([maxCumulativeSumIndexRight:])
+//            helpMax = accelerometerData.get(accelerometerData.size() - 1);
+//            helpMaxIndex = accelerometerData.size() - 1;
+//            for (int i = accelerometerData.size() - 1; i >= maxCumulativeSumIndexRight; i--) {
+//                if (accelerometerData.get(i) > helpMax) {
+//                    helpMax = accelerometerData.get(i);
 //                    helpMaxIndex = i;
 //                }
 //            }
-//            startOfJumpIndex = helpMaxIndex;
-//
-//
-//            // Find a max point (which is the endOfJumpIndex) before the cumulative point from the left
-//            float helpMaxEnd = accelerometerDataNew.get(helpMaxIndex + 1);
-//            int helpMaxIndexEnd = helpMaxIndex + 1;
-//            for (int i = helpMaxIndex + 1; i < accelerometerDataNew.size(); i++) {
-//                if (helpMaxEnd < accelerometerDataNew.get(i)) {
-//                    helpMaxEnd = accelerometerDataNew.get(i);
-//                    helpMaxIndexEnd = i;
-//                }
-//            }
-//            endOfJumpIndex = helpMaxIndexEnd;
-//
-//
-////            // Find a peak with maximum cumulative sum from the right
-////            float maxValueRight = calculateCumulativeSumFromRight(accelerometerData, peaks.get(0));
-////            int maxCumulativeSumIndexRight = peaks.get(0);
-////            for (int i : peaks) {
-////                if (maxValueRight < calculateCumulativeSumFromRight(accelerometerData, i)) {
-////                    maxValueRight = calculateCumulativeSumFromRight(accelerometerData, i);
-////                    maxCumulativeSumIndexRight = i;
-////                }
-////            }
-////
-////            // Find a start of jump index by looking for a maximum in the subarray of accelerometerData ([maxCumulativeSumIndexRight:])
-////            helpMax = accelerometerData.get(accelerometerData.size() - 1);
-////            helpMaxIndex = accelerometerData.size() - 1;
-////            for (int i = accelerometerData.size() - 1; i >= maxCumulativeSumIndexRight; i--) {
-////                if (accelerometerData.get(i) > helpMax) {
-////                    helpMax = accelerometerData.get(i);
-////                    helpMaxIndex = i;
-////                }
-////            }
-////            endOfJumpIndex = helpMaxIndex;
-//
-//            startOfJump = timeDataNew.get(startOfJumpIndex);
-//            endOfJump = timeDataNew.get(endOfJumpIndex);
-//
-//            // sending target time (timeTosend) to Server.
-//            tTarget = (startOfJump + endOfJump) / 2;
-//
-//            sendMSD();
+//            endOfJumpIndex = helpMaxIndex;
+
+            startOfJump = timeDataNew.get(startOfJumpIndex);
+            endOfJump = timeDataNew.get(endOfJumpIndex);
+
+            // sending target time (timeTosend) to Server.
+            tTarget = (startOfJump + endOfJump) / 2;
+
+            sendMSD();
         }
 
     }
@@ -799,7 +586,6 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
                     try {
 
                         Integer result = Tasks.await(sendMessageTask);
-                        Log.d("wearData",Integer.toString(result));
 //Handle the errors//
 
                     } catch (Exception e) {
