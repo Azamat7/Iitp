@@ -12,6 +12,8 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
+import android.support.wearable.activity.WearableActivity;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -24,10 +26,16 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
+import com.google.android.gms.wearable.Node;
+import com.google.android.gms.wearable.Wearable;
+
 import java.util.ArrayList;
+import java.util.List;
 
 
-public class ClientConnectionActivity extends Activity implements AdapterView.OnItemClickListener {
+public class ClientConnectionActivity extends WearableActivity implements AdapterView.OnItemClickListener {
 
 
     // Debugging
@@ -84,25 +92,11 @@ public class ClientConnectionActivity extends Activity implements AdapterView.On
 
         btnDiscoverDevices = (Button) findViewById(R.id.btnDiscoverDevices);
 
-//        btnEnableDisable_Discoverable = (Button) findViewById(R.id.btnDiscoverable_on_off);
-//        btnEnableDisable_Discoverable.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                ensureDiscoverable();
-//            }
-//        });
-
         lvNewDevices = (ListView) findViewById(R.id.lvNewDevices);
         lvNewDevices.setOnItemClickListener(ClientConnectionActivity.this);
 
         Log.e("BTadapter:","got default bt adapter");
 
-        // If the adapter is null, then Bluetooth is not supported
-//        if (mBluetoothAdapter == null) {
-//            Toast.makeText(this, "Bluetooth is not available", Toast.LENGTH_LONG).show();
-//            finish();
-//            return;
-//        }
 
         Intent dataIntent = new Intent(this, DataActivity.class);
         startActivity(dataIntent);
@@ -112,16 +106,6 @@ public class ClientConnectionActivity extends Activity implements AdapterView.On
     public void onStart() {
         super.onStart();
         if(D) Log.e(TAG, "++ ON START ++");
-
-        // If BT is not on, request that it be enabled.
-        // setupChat() will then be called during onActivityResult
-//        if (!mBluetoothAdapter.isEnabled()) {
-//            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-//            startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
-//            // Otherwise, setup the chat session
-//        } else {
-//            if (mClientChatService == null) setupChat();
-//        }
     }
 
     @Override
@@ -131,17 +115,6 @@ public class ClientConnectionActivity extends Activity implements AdapterView.On
 
         IntentFilter discoverDevicesIntent = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         registerReceiver(mBroadcastReceiver3, discoverDevicesIntent);
-
-        // Performing this check in onResume() covers the case in which BT was
-        // not enabled during onStart(), so we were paused to enable it...
-        // onResume() will be called when ACTION_REQUEST_ENABLE activity returns.
-//        if (mClientChatService != null) {
-//            // Only if the state is STATE_NONE, do we know that we haven't started already
-//            if (mClientChatService.getState() == BluetoothChatService.STATE_NONE) {
-//                // Start the Bluetooth chat services
-////                mClientChatService.start();
-//            }
-//        }
     }
 
     private void setupChat() {
@@ -166,10 +139,6 @@ public class ClientConnectionActivity extends Activity implements AdapterView.On
                 sendMessage(message);
             }
         });
-
-        // Initialize the BluetoothChatService to perform bluetooth connections
-//        mClientChatService = new BluetoothChatService(this, mHandler, N_CLIENTS);
-
         // Initialize the buffer for outgoing messages
         mOutStringBuffer = new StringBuffer("");
     }
@@ -189,19 +158,11 @@ public class ClientConnectionActivity extends Activity implements AdapterView.On
     @Override
     public void onDestroy() {
         super.onDestroy();
-        // Stop the Bluetooth chat services
-//        if (mClientChatService != null) mClientChatService.stop();
         if(D) Log.e(TAG, "--- ON DESTROY ---");
     }
 
     private void ensureDiscoverable() {
         if(D) Log.d(TAG, "ensure discoverable");
-//        if (mBluetoothAdapter.getScanMode() !=
-//                BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
-//            Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-//            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
-//            startActivity(discoverableIntent);
-//        }
     }
 
     /**
@@ -209,12 +170,6 @@ public class ClientConnectionActivity extends Activity implements AdapterView.On
      * @param message  A string of text to send.
      */
     private void sendMessage(String message) {
-        // Check that we're actually connected before trying anything
-//        if (mClientChatService.getState() != BluetoothChatService.STATE_CONNECTED) {
-//            Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT).show();
-//            return;
-//        }
-
 
         // Check that there's actually something to send
         if (message.length() > 0) {
@@ -281,65 +236,10 @@ public class ClientConnectionActivity extends Activity implements AdapterView.On
         Log.d(TAG, "onItemClick: deviceName = " + deviceName);
         Log.d(TAG, "onItemClick: deviceAddress = " + deviceAddress);
 
-        //create the bond.
-        //NOTE: Requires API 17+? I think this is JellyBean
-        if(Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN_MR2){
-            Log.d(TAG, "onItemClick: " + deviceName);
-
-
-            Log.d(TAG, "onItemClick: bonded");
-            mBTDevice = mBTDevices.get(i);
-
-            // connect to the bonded mBTDevice
-            //mClientChatService.connect(mBTDevice);
-        }
 //        while (mClientChatService.getConnectedThreads().size()  < N_CLIENTS) {
 //
 //        }
         Intent dataIntent = new Intent(this, DataActivity.class);
         startActivity(dataIntent);
     }
-
-    public void btnDiscover(View view) {
-        Log.d(TAG, "btnDiscover: Looking for unpaired devices.");
-
-//        if(mBluetoothAdapter.isDiscovering()){
-//            mBluetoothAdapter.cancelDiscovery();
-//            Log.d(TAG, "btnDiscover: Canceling discovery.");
-//
-//            //check BT permissions in manifest
-//            checkBTPermissions();
-//
-//            mBluetoothAdapter.startDiscovery();
-//            IntentFilter discoverDevicesIntent = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-//            registerReceiver(mBroadcastReceiver3, discoverDevicesIntent);
-//            Log.e("BtnDiscover", "registerReceiver() is called");
-//        }
-//        if(!mBluetoothAdapter.isDiscovering()){
-//
-//            //check BT permissions in manifest
-//            checkBTPermissions();
-//
-//            mBluetoothAdapter.startDiscovery();
-//            IntentFilter discoverDevicesIntent = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-//            registerReceiver(mBroadcastReceiver3, discoverDevicesIntent);
-//            Log.e("BtnDiscover", "registerReceiver() is called");
-//        }
-    }
-
-    private void checkBTPermissions() {
-        if(Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP){
-            int permissionCheck = this.checkSelfPermission("Manifest.permission.ACCESS_FINE_LOCATION");
-            permissionCheck += this.checkSelfPermission("Manifest.permission.ACCESS_COARSE_LOCATION");
-            permissionCheck += this.checkSelfPermission("Manifest.permission.WRITE_EXTERNAL_STORAGE");
-            if (permissionCheck != 0) {
-                this.requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 1001); //Any number
-            }
-        }else{
-            Log.d(TAG, "checkBTPermissions: No need to check permissions. SDK version < LOLLIPOP.");
-        }
-    }
-
-
-
 }

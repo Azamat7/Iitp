@@ -3,7 +3,10 @@ package com.example.android.iitp;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -11,12 +14,18 @@ import android.hardware.SensorManager;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.PowerManager;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
+
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
+import com.google.android.gms.wearable.Node;
+import com.google.android.gms.wearable.Wearable;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -31,6 +40,7 @@ import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -199,6 +209,11 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
         String currentDateAndTime = sdf.format(new Date());
         File myDir = new File(root + "/MSD/" + currentDateAndTime);
         myDir.mkdirs();
+
+        IntentFilter newFilter = new IntentFilter(Intent.ACTION_SEND);
+        Receiver messageReceiver = new Receiver();
+
+        LocalBroadcastManager.getInstance(this).registerReceiver(messageReceiver, newFilter);
 
         // -----------------------------------------------------------------
         GeneralData = new File(path, "GeneralData.txt");
@@ -559,74 +574,74 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
 //                min_index = i;
 //            }
 //        }
-
-            // Get an array of peaks
-            ArrayList<Integer> peaks = new ArrayList<Integer>();
-            peaks = detectPeaks(accelerometerDataNew, PEAK_THRESHOLD);
-
-            // Find a peak with maximum cumulative sum from the left
-            float maxValueLeft = calculateCumulativeSumFromLeft(accelerometerDataNew, peaks.get(0));
-            int maxCumulativeSumIndexLeft = peaks.get(0);
-            for (int i : peaks) {
-                if (maxValueLeft < calculateCumulativeSumFromLeft(accelerometerDataNew, i)) {
-                    maxValueLeft = calculateCumulativeSumFromLeft(accelerometerDataNew, i);
-                    maxCumulativeSumIndexLeft = i;
-                }
-            }
-
-
-            // Find a start of jump index by looking for a maximum in the subarray of accelerometerData ([:maxCumulativeSumIndexLeft + 1])
-            float helpMax = accelerometerDataNew.get(0);
-            int helpMaxIndex = 0;
-            for (int i = 0; i < maxCumulativeSumIndexLeft + 1; i++) {
-                if (accelerometerDataNew.get(i) > helpMax) {
-                    helpMax = accelerometerDataNew.get(i);
-                    helpMaxIndex = i;
-                }
-            }
-            startOfJumpIndex = helpMaxIndex;
-
-
-            // Find a max point (which is the endOfJumpIndex) before the cumulative point from the left
-            float helpMaxEnd = accelerometerDataNew.get(helpMaxIndex + 1);
-            int helpMaxIndexEnd = helpMaxIndex + 1;
-            for (int i = helpMaxIndex + 1; i < accelerometerDataNew.size(); i++) {
-                if (helpMaxEnd < accelerometerDataNew.get(i)) {
-                    helpMaxEnd = accelerometerDataNew.get(i);
-                    helpMaxIndexEnd = i;
-                }
-            }
-            endOfJumpIndex = helpMaxIndexEnd;
-
-
-//            // Find a peak with maximum cumulative sum from the right
-//            float maxValueRight = calculateCumulativeSumFromRight(accelerometerData, peaks.get(0));
-//            int maxCumulativeSumIndexRight = peaks.get(0);
+            sendMSD();
+//            // Get an array of peaks
+//            ArrayList<Integer> peaks = new ArrayList<Integer>();
+//            peaks = detectPeaks(accelerometerDataNew, PEAK_THRESHOLD);
+//
+//            // Find a peak with maximum cumulative sum from the left
+//            float maxValueLeft = calculateCumulativeSumFromLeft(accelerometerDataNew, peaks.get(0));
+//            int maxCumulativeSumIndexLeft = peaks.get(0);
 //            for (int i : peaks) {
-//                if (maxValueRight < calculateCumulativeSumFromRight(accelerometerData, i)) {
-//                    maxValueRight = calculateCumulativeSumFromRight(accelerometerData, i);
-//                    maxCumulativeSumIndexRight = i;
+//                if (maxValueLeft < calculateCumulativeSumFromLeft(accelerometerDataNew, i)) {
+//                    maxValueLeft = calculateCumulativeSumFromLeft(accelerometerDataNew, i);
+//                    maxCumulativeSumIndexLeft = i;
 //                }
 //            }
 //
-//            // Find a start of jump index by looking for a maximum in the subarray of accelerometerData ([maxCumulativeSumIndexRight:])
-//            helpMax = accelerometerData.get(accelerometerData.size() - 1);
-//            helpMaxIndex = accelerometerData.size() - 1;
-//            for (int i = accelerometerData.size() - 1; i >= maxCumulativeSumIndexRight; i--) {
-//                if (accelerometerData.get(i) > helpMax) {
-//                    helpMax = accelerometerData.get(i);
+//
+//            // Find a start of jump index by looking for a maximum in the subarray of accelerometerData ([:maxCumulativeSumIndexLeft + 1])
+//            float helpMax = accelerometerDataNew.get(0);
+//            int helpMaxIndex = 0;
+//            for (int i = 0; i < maxCumulativeSumIndexLeft + 1; i++) {
+//                if (accelerometerDataNew.get(i) > helpMax) {
+//                    helpMax = accelerometerDataNew.get(i);
 //                    helpMaxIndex = i;
 //                }
 //            }
-//            endOfJumpIndex = helpMaxIndex;
-
-            startOfJump = timeDataNew.get(startOfJumpIndex);
-            endOfJump = timeDataNew.get(endOfJumpIndex);
-
-            // sending target time (timeTosend) to Server.
-            tTarget = (startOfJump + endOfJump) / 2;
-
-            sendMSD();
+//            startOfJumpIndex = helpMaxIndex;
+//
+//
+//            // Find a max point (which is the endOfJumpIndex) before the cumulative point from the left
+//            float helpMaxEnd = accelerometerDataNew.get(helpMaxIndex + 1);
+//            int helpMaxIndexEnd = helpMaxIndex + 1;
+//            for (int i = helpMaxIndex + 1; i < accelerometerDataNew.size(); i++) {
+//                if (helpMaxEnd < accelerometerDataNew.get(i)) {
+//                    helpMaxEnd = accelerometerDataNew.get(i);
+//                    helpMaxIndexEnd = i;
+//                }
+//            }
+//            endOfJumpIndex = helpMaxIndexEnd;
+//
+//
+////            // Find a peak with maximum cumulative sum from the right
+////            float maxValueRight = calculateCumulativeSumFromRight(accelerometerData, peaks.get(0));
+////            int maxCumulativeSumIndexRight = peaks.get(0);
+////            for (int i : peaks) {
+////                if (maxValueRight < calculateCumulativeSumFromRight(accelerometerData, i)) {
+////                    maxValueRight = calculateCumulativeSumFromRight(accelerometerData, i);
+////                    maxCumulativeSumIndexRight = i;
+////                }
+////            }
+////
+////            // Find a start of jump index by looking for a maximum in the subarray of accelerometerData ([maxCumulativeSumIndexRight:])
+////            helpMax = accelerometerData.get(accelerometerData.size() - 1);
+////            helpMaxIndex = accelerometerData.size() - 1;
+////            for (int i = accelerometerData.size() - 1; i >= maxCumulativeSumIndexRight; i--) {
+////                if (accelerometerData.get(i) > helpMax) {
+////                    helpMax = accelerometerData.get(i);
+////                    helpMaxIndex = i;
+////                }
+////            }
+////            endOfJumpIndex = helpMaxIndex;
+//
+//            startOfJump = timeDataNew.get(startOfJumpIndex);
+//            endOfJump = timeDataNew.get(endOfJumpIndex);
+//
+//            // sending target time (timeTosend) to Server.
+//            tTarget = (startOfJump + endOfJump) / 2;
+//
+//            sendMSD();
         }
 
     }
@@ -673,8 +688,10 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
 
         Log.e(TAG, "msd string length: "+msd.length());
 
-        byte[] sendMSD = msd.getBytes();
+        //byte[] sendMSD = msd.getBytes();
         //ClientConnectionActivity.mClientChatService.write(sendMSD);
+        String datapath = "/my_path";
+        new SendMessage(datapath, msd).start();
 
         Log.e(TAG, "MSD has been sent!");
 
@@ -724,20 +741,76 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
     public void turnOnScreen(){
         // turn on screen
         Log.v("ProximityActivity", "ON!");
-        mWakeLock = mPowerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "tag");
-        mWakeLock.acquire();
+        //mWakeLock = mPowerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "tag");
+        //mWakeLock.acquire();
         isScreenOn = true;
     }
 
     public void turnOffScreen(){
         // turn off screen
         Log.v("ProximityActivity", "OFF!");
-        mWakeLock = mPowerManager.newWakeLock(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "tag");
-        mWakeLock.acquire();
+        //mWakeLock = mPowerManager.newWakeLock(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "tag");
+        //mWakeLock.acquire();
         isScreenOn = false;
     }
 
 
+
+
+
+    public class Receiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+//Display the following when a new message is received//
+
+            String message = intent.getStringExtra("message");
+            //do something with message;
+
+        }
+    }
+    class SendMessage extends Thread {
+        String path;
+        String message;
+
+//Constructor for sending information to the Data Layer//
+
+        SendMessage(String p, String m) {
+            path = p;
+            message = m;
+        }
+
+        public void run() {
+
+//Retrieve the connected devices//
+            Task<List<Node>> nodeListTask =
+                    Wearable.getNodeClient(getApplicationContext()).getConnectedNodes();
+            try {
+
+//Block on a task and get the result synchronously//
+                List<Node> nodes = Tasks.await(nodeListTask);
+                for (Node node : nodes) {
+
+//Send the message///
+
+                    Task<Integer> sendMessageTask =
+                            Wearable.getMessageClient(DataActivity.this).sendMessage(node.getId(), path, message.getBytes());
+
+                    try {
+
+                        Integer result = Tasks.await(sendMessageTask);
+                        Log.d("wearData",Integer.toString(result));
+//Handle the errors//
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
 
 }
