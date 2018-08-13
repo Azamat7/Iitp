@@ -1,8 +1,6 @@
 package com.example.android.iitp;
 
 import android.app.Activity;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -11,11 +9,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.os.Environment;
-import android.os.Handler;
-import android.os.PowerManager;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -29,26 +23,14 @@ import com.google.android.gms.wearable.Wearable;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.io.Serializable;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 
 public class DataActivity extends Activity implements Serializable, SensorEventListener{
 
     public static final float PEAK_THRESHOLD = 10;
     public static final long TRIM_THRESHOLD = 1500;
-    private static final UUID MY_UUID_INSECURE = UUID.fromString("8ce255c0-200a-11e0-ac64-0800200c9a66");
     private static final String TAG = "message";
 
     private Button startButton;
@@ -60,12 +42,10 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
     private boolean isTimeDataSent = false;
 
     private static SensorManager mSensorManager;
-    private static SensorEventListener sensorEventListener;
 
     public static long dataStartTimeInMillis;
     public static long dataStopTimeInMillis;
     public static long timeToSend;
-    public static String ipAddress;
 
     private long endOfJump = 0;
     private long startOfJump = 0;
@@ -86,8 +66,6 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
     private ArrayList<Float> horizontalAccelerationData;
     private ArrayList<Long> timeData;
 
-    private PowerManager mPowerManager;
-
     private static long lastUpdate = System.currentTimeMillis();
     private boolean isDataRecording = false;
 
@@ -103,27 +81,21 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
         setContentView(R.layout.activity_data);
 
         startButton = (Button) findViewById(R.id.startButton);
-//        stopButton = (Button) findViewById(R.id.stopButton);
 
         startButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (!isDataRecording) {
                     startButton.setText("Stop");
-//                    startButton.setBackgroundColor(Color.RED);
-//                    startButton.setTextColor(Color.BLACK);
                     onStartButton();
                 } else {
                     startButton.setText("Start");
-//                    float[] colorList = {0x3F, 0x51, 0xB5};
-//                    startButton.setBackgroundColor(Color.HSVToColor(colorList));
                     onStopButton();
                 }
             }
         });
 
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        mPowerManager = (PowerManager) this.getSystemService(Context.POWER_SERVICE);
 
         generalAccelerationAlongX = new ArrayList<>();
         generalAccelerationAlongY = new ArrayList<>();
@@ -143,28 +115,11 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
 
         rotationMatrixData = new ArrayList<>();
 
-        // -----------------------------------------------------------------
-        File path = getApplicationContext().getExternalFilesDir(null);
-        // -----------------------------------------------------------------
-        File ipAddressFile = new File(path, "ipAddress.txt");
-
-        try {
-            FileReader fr = new FileReader(ipAddressFile);
-            BufferedReader br = new BufferedReader(fr);
-            try {
-                ipAddress = br.readLine();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        String root = Environment.getExternalStorageDirectory().toString();
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
-        String currentDateAndTime = sdf.format(new Date());
-        File myDir = new File(root + "/MSD/" + currentDateAndTime);
-        myDir.mkdirs();
+//        String root = Environment.getExternalStorageDirectory().toString();
+//        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
+//        String currentDateAndTime = sdf.format(new Date());
+//        File myDir = new File(root + "/MSD/" + currentDateAndTime);
+//        myDir.mkdirs();
 
         IntentFilter newFilter = new IntentFilter(Intent.ACTION_SEND);
         Receiver messageReceiver = new Receiver();
@@ -176,42 +131,38 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
         if (!isDataRecording) {
             isDataRecording = true;
 
-            // sending ping message for data recording start from Client to Server phone.
-            String message = "Data Start Ping!";
-            byte[] send = message.getBytes();
-            //ClientConnectionActivity.mClientChatService.write(send);
-
             Toast.makeText(getApplicationContext(), "Data recording started!", Toast.LENGTH_SHORT).show();
 
             startTime = System.currentTimeMillis();
 
+            if (mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE) != null){
+                Log.d("theta67",mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE).getName());
+            }else{
+                Log.d("theta67","no sensor bruh");
+            }
+
             mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_FASTEST);
             mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE), SensorManager.SENSOR_DELAY_FASTEST);
             mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY), SensorManager.SENSOR_DELAY_FASTEST);
-            mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY), SensorManager.SENSOR_DELAY_FASTEST);
             mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_FASTEST);
             mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_FASTEST);
-
+            //mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_HEART_BEAT), SensorManager.SENSOR_DELAY_FASTEST);
+            //mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE), SensorManager.SENSOR_DELAY_FASTEST);
         }
     }
 
+    private float accelerometer_x, accelerometer_y, accelerometer_z;
+    private float gravity_x, gravity_y, gravity_z;
+    private float gyroscope_x, gyroscope_y, gyroscope_z;
+    private float verticalAcceleration;
+
+    private float[] mGravity;
+    private float[] mGeomagnetic;
+    private float[] Rot;
+
     public void onSensorChanged(SensorEvent event) {
-        float accelerometer_x = 0;
-        float accelerometer_y = 0;
-        float accelerometer_z = 0;
-        float gravity_x = 0;
-        float gravity_y = 0;
-        float gravity_z = 0;
-        float gyroscope_x = 0;
-        float gyroscope_y = 0;
-        float gyroscope_z = 0;
-        float verticalAcceleration = 0;
-
-        float[] mGravity = {0f};
-        float[] mGeomagnetic = {0f};
-        float[] R = {0f};
-
         long currentTime = System.currentTimeMillis();
+
         if (event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
             accelerometer_x = event.values[0];
             accelerometer_y = event.values[1];
@@ -228,17 +179,6 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
             gyroscope_x = event.values[0];
             gyroscope_y = event.values[1];
             gyroscope_z = event.values[2];
-        }
-
-        if (event.sensor.getType() == Sensor.TYPE_PROXIMITY) {
-
-            if (event.values[0] == 0 && isScreenOn == true) {
-//                            turnOffScreen();
-            }
-
-            if (event.values[0] != 0 && isScreenOn == false) {
-//                            turnOnScreen();
-            }
         }
 
         float accelerometer_norm = (float) Math.sqrt(accelerometer_x * accelerometer_x + accelerometer_y * accelerometer_y + accelerometer_z * accelerometer_z);
@@ -259,13 +199,14 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
             mGravity = event.values;
         if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
             mGeomagnetic = event.values;
+
         if (mGravity != null && mGeomagnetic != null) {
-            R = new float[9];
+            Rot = new float[9];
             float I[] = new float[9];
-//            boolean success = SensorManager.getRotationMatrix(R, I, mGravity, mGeomagnetic);
-//            if (success) {
-//                Log.e(TAG, "Matrix_R: " + R);
-//            }
+            boolean success = SensorManager.getRotationMatrix(Rot, I, mGravity, mGeomagnetic);
+            if (success) {
+                Log.e(TAG, "Matrix_R: " + Rot);
+            }
         }
 
         if ((currentTime - lastUpdate) >= 10) {
@@ -288,23 +229,9 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
             horizontalAccelerationData.add(horizontalAcceleration);
             timeData.add(currentTime - startTime);
 
-            Log.e(TAG, "R_matrix: " + R);
-            rotationMatrixData.add(R);
-
-            //Log.d(TAG, "Time during accumulation: " + (currentTime - startTime));
-
-//                        try {
-//                            BufferedWriter out = new BufferedWriter(new FileWriter(VerticalAccelerationData, true), 1024);
-//                            String entry = verticalAcceleration + " " + (currentTime - startTime) + "\n";
-//                            out.write(entry);
-//                            out.close();
-//                        } catch (IOException e) {
-//                            e.printStackTrace();
-//                        }
+            Log.e(TAG, "R_matrix: " + Rot);
+            rotationMatrixData.add(Rot);
         }
-
-//                    accelerometerData.add(verticalAcceleration);
-//                    timeData.add(currentTime - startTime);
     }
 
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
@@ -318,8 +245,6 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
             startButton.setText("Blocked");
             startButton.setEnabled(false);
 
-            mSensorManager.unregisterListener(sensorEventListener);
-//            new TimeDataStop(this).execute();
             Toast.makeText(getApplicationContext(), "Stopped!", Toast.LENGTH_SHORT).show();
 
             int startOfJumpIndex = 0, endOfJumpIndex = 0;
@@ -354,14 +279,6 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
             ArrayList<Float> accelerometerDataNew = new ArrayList<>(accelerometerData.subList(trimStartIndex, trimEndIndex));
             ArrayList<Long> timeDataNew = new ArrayList<>(timeData.subList(trimStartIndex, trimEndIndex));
 
-//
-//        for (int i = 0; i < max_index - 10; i++) {
-//            if (accelerometerData.get(i) > min) {
-//                min = accelerometerData.get(i);
-//                min_index = i;
-//            }
-//        }
-            sendMSD();
             // Get an array of peaks
             ArrayList<Integer> peaks = new ArrayList<Integer>();
             peaks = detectPeaks(accelerometerDataNew, PEAK_THRESHOLD);
@@ -475,8 +392,6 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
 
         Log.e(TAG, "msd string length: "+msd.length());
 
-        //byte[] sendMSD = msd.getBytes();
-        //ClientConnectionActivity.mClientChatService.write(sendMSD);
         String datapath = "/my_path";
         new SendMessage(datapath, msd).start();
 
@@ -524,24 +439,6 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
 
         return sum;
     }
-
-    public void turnOnScreen(){
-        // turn on screen
-        Log.v("ProximityActivity", "ON!");
-        //mWakeLock = mPowerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "tag");
-        //mWakeLock.acquire();
-        isScreenOn = true;
-    }
-
-    public void turnOffScreen(){
-        // turn off screen
-        Log.v("ProximityActivity", "OFF!");
-        //mWakeLock = mPowerManager.newWakeLock(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "tag");
-        //mWakeLock.acquire();
-        isScreenOn = false;
-    }
-
-
 
 
 
