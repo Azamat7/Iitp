@@ -301,7 +301,7 @@ public class CaptureHighSpeedVideoMode  extends Fragment
 
         // Pick the smallest of those, assuming we found any
         if (bigEnough.size() > 0) {
-            return Collections.max(bigEnough, new CompareSizesByArea());
+            return Collections.max(bigEnough, new CaptureHighSpeedVideoMode.CompareSizesByArea());
         } else {
             Log.e(TAG, "Couldn't find any suitable preview size");
             return choices[0];
@@ -352,7 +352,7 @@ public class CaptureHighSpeedVideoMode  extends Fragment
         double fraction;
 
         for (int i = 1; i < clients; i++) {
-            fraction = 1.0/clients;
+            fraction = 1.0 / clients;
             Log.e(TAG, "Fraction: " + fraction);
             startx = fraction * i * width;
             endx = startx;
@@ -448,7 +448,7 @@ public class CaptureHighSpeedVideoMode  extends Fragment
      */
     private void requestVideoPermissions() {
         if (shouldShowRequestPermissionRationale(VIDEO_PERMISSIONS)) {
-            new ConfirmationDialog().show(getChildFragmentManager(), FRAGMENT_DIALOG);
+            new CaptureHighSpeedVideoMode.ConfirmationDialog().show(getChildFragmentManager(), FRAGMENT_DIALOG);
         } else {
             FragmentCompat.requestPermissions(this, VIDEO_PERMISSIONS, REQUEST_VIDEO_PERMISSIONS);
         }
@@ -462,27 +462,27 @@ public class CaptureHighSpeedVideoMode  extends Fragment
             if (grantResults.length == VIDEO_PERMISSIONS.length) {
                 for (int result : grantResults) {
                     if (result != PackageManager.PERMISSION_GRANTED) {
-                        ErrorDialog.newInstance(getString(Integer.parseInt("0")))
+                        CaptureHighSpeedVideoMode.ErrorDialog.newInstance(getString(Integer.parseInt("0")))
                                 .show(getChildFragmentManager(), FRAGMENT_DIALOG);
                         break;
                     }
                 }
             } else {
-                ErrorDialog.newInstance(getString(Integer.parseInt("0")))
+                CaptureHighSpeedVideoMode.ErrorDialog.newInstance(getString(Integer.parseInt("0")))
                         .show(getChildFragmentManager(), FRAGMENT_DIALOG);
             }
-        } else if ( requestCode == REQUEST_EXTERNAL_STORAGE) {
+        } else if (requestCode == REQUEST_EXTERNAL_STORAGE) {
             // If request is cancelled, the result arrays are empty.
             if (grantResults.length > 0
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 try {
                     setUpMediaRecorder();
-                }catch (Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             } else {
             }
-        }else {
+        } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
@@ -593,7 +593,7 @@ public class CaptureHighSpeedVideoMode  extends Fragment
         } catch (NullPointerException e) {
             // Currently an NPE is thrown when the Camera2API is used but not supported on the
             // device this code runs.
-            ErrorDialog.newInstance(getString(Integer.parseInt("0")))
+            CaptureHighSpeedVideoMode.ErrorDialog.newInstance(getString(Integer.parseInt("0")))
                     .show(getChildFragmentManager(), FRAGMENT_DIALOG);
         } catch (InterruptedException e) {
             throw new RuntimeException("Interrupted while trying to lock camera opening.");
@@ -772,11 +772,13 @@ public class CaptureHighSpeedVideoMode  extends Fragment
      * @return path + filename
      */
     private File getVideoFile(Context context) {
+
         String root = Environment.getExternalStorageDirectory().toString();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
         currentDateAndTime = sdf.format(new Date());
         File myDir = new File(root + "/MSD/" + currentDateAndTime);
         myDir.mkdirs();
+
         return new File(myDir, "VIDEO" + ".webm");
     }
 
@@ -800,10 +802,11 @@ public class CaptureHighSpeedVideoMode  extends Fragment
             assert texture != null;
             texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
             mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
-//            List<Surface> surfaces = new ArrayList<>();
+            List<Surface> surfaces = new ArrayList<>();
             Surface previewSurface = new Surface(texture);
             surfaces.add(previewSurface);
             mPreviewBuilder.addTarget(previewSurface);
+
             Surface recorderSurface = mMediaRecorder.getSurface();
             surfaces.add(recorderSurface);
             mPreviewBuilder.addTarget(recorderSurface);
@@ -834,6 +837,7 @@ public class CaptureHighSpeedVideoMode  extends Fragment
             mSensorEventListener = new SensorEventListener() {
                 float[] mGravity;
                 float[] mGeomagnetic;
+
                 @Override
                 public void onSensorChanged(SensorEvent sensorEvent) {
                     if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
@@ -925,10 +929,6 @@ public class CaptureHighSpeedVideoMode  extends Fragment
 //        while(!(nClients == ServerConnectionActivity.mServerChatService.getIsAllTimeReceived())) {
 ////            // wait
 ////        }
-
-        while(ServerConnectionActivity.mServerDataModel == null){
-            // wait
-        }
 
         MediaMetadataRetriever mediaMetadataRetriever = new MediaMetadataRetriever();
         mediaMetadataRetriever.setDataSource(filePath);
@@ -1023,6 +1023,7 @@ public class CaptureHighSpeedVideoMode  extends Fragment
 //            long jumpStart = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getTimeJumpStart();
 //            long jumpEnd = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getTimeJumpEnd();
 //            long dataStartTime = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getDataStartTime();
+
 
             ArrayList<String> timeData = ServerConnectionActivity.mServerDataModel.getTimeData();
             long jumpStart = ServerConnectionActivity.mServerDataModel.getTimeJumpStart();
@@ -1237,8 +1238,8 @@ public class CaptureHighSpeedVideoMode  extends Fragment
 
         private static final String ARG_MESSAGE = "message";
 
-        public static ErrorDialog newInstance(String message) {
-            ErrorDialog dialog = new ErrorDialog();
+        public static CaptureHighSpeedVideoMode.ErrorDialog newInstance(String message) {
+            CaptureHighSpeedVideoMode.ErrorDialog dialog = new CaptureHighSpeedVideoMode.ErrorDialog();
             Bundle args = new Bundle();
             args.putString(ARG_MESSAGE, message);
             dialog.setArguments(args);
@@ -1287,9 +1288,9 @@ public class CaptureHighSpeedVideoMode  extends Fragment
     public static String saveImage(Bitmap finalBitmap, String folder, String deviceId) {
         String root = Environment.getExternalStorageDirectory().toString();
         File myDir = new File(root + "/MSD/" + folder);
-        String fname = "Image_"+ deviceId + ".jpg";
-        File file = new File (myDir, fname);
-        if (file.exists ()) file.delete ();
+        String fname = "Image_" + deviceId + ".jpg";
+        File file = new File(myDir, fname);
+        if (file.exists()) file.delete();
         try {
             FileOutputStream out = new FileOutputStream(file);
             finalBitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
@@ -1322,7 +1323,7 @@ public class CaptureHighSpeedVideoMode  extends Fragment
         int axisOffset = 7;
         int height = bm1.getHeight();
         int width = bm2.getWidth();
-        double blendingCoefficient = 1.0/(2*axisOffset + 1);
+        double blendingCoefficient = 1.0 / (2 * axisOffset + 1);
 
         // Create a resulting bitmap
         Bitmap result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
@@ -1379,11 +1380,11 @@ public class CaptureHighSpeedVideoMode  extends Fragment
         return result;
     }
 
-    public String BitMapToString(Bitmap bitmap){
-        ByteArrayOutputStream baos=new  ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG,100, baos);
-        byte [] b=baos.toByteArray();
-        String temp= Base64.encodeToString(b, Base64.DEFAULT);
+    public String BitMapToString(Bitmap bitmap) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
+        byte[] b = baos.toByteArray();
+        String temp = Base64.encodeToString(b, Base64.DEFAULT);
         return temp;
     }
 }

@@ -18,7 +18,6 @@ public class VideoHighFPSActivity extends AppCompatActivity {
     public static Bitmap action;
     public static SensorManager mSensorManager;
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
