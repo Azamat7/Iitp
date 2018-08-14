@@ -10,18 +10,11 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
-import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.graphics.drawable.ColorDrawable;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -30,8 +23,9 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
-import android.media.MediaMetadataRetriever;
+import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Environment;
@@ -40,8 +34,6 @@ import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.v13.app.FragmentCompat;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.util.Base64;
 import android.util.Log;
 import android.util.Range;
 import android.util.Size;
@@ -52,14 +44,10 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageView;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
-import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -70,10 +58,7 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import wseemann.media.FFmpegMediaMetadataRetriever;
-
-
-public class CaptureHighSpeedVideoMode  extends Fragment
+public class CaptureHighSpeedVideoMode extends Fragment
         implements View.OnClickListener, FragmentCompat.OnRequestPermissionsResultCallback {
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
@@ -81,20 +66,9 @@ public class CaptureHighSpeedVideoMode  extends Fragment
     private static final int REQUEST_VIDEO_PERMISSIONS = 1;
     private static final String FRAGMENT_DIALOG = "dialog";
 
-    private SensorEventListener mSensorEventListener;
-
-    private float[] rotationMatrix;
-
     private static final String[] VIDEO_PERMISSIONS = {
             Manifest.permission.CAMERA,
             Manifest.permission.RECORD_AUDIO,
-    };
-
-    // Storage Permissions
-    private static final int REQUEST_EXTERNAL_STORAGE = 2;
-    private static String[] PERMISSIONS_STORAGE = {
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
     };
 
     static {
@@ -108,8 +82,6 @@ public class CaptureHighSpeedVideoMode  extends Fragment
      * An {@link AutoFitTextureView} for camera preview.
      */
     private AutoFitTextureView mTextureView;
-
-    private ImageView linesImageView;
 
     /**
      * Button to record video
@@ -127,8 +99,10 @@ public class CaptureHighSpeedVideoMode  extends Fragment
      */
     private CameraConstrainedHighSpeedCaptureSession mPreviewSessionHighSpeed;
     private CameraCaptureSession mPreviewSession;
-    private static File VideoData;
-    private int orientationOfScreen = Configuration.ORIENTATION_PORTRAIT;
+
+    public static File videoFile;
+    private String currentDateAndTime;
+
 
     /**
      * {@link TextureView.SurfaceTextureListener} handles several lifecycle events on a
@@ -190,10 +164,6 @@ public class CaptureHighSpeedVideoMode  extends Fragment
 
     List<Surface> surfaces = new ArrayList<Surface>();
 
-    private ArrayList<Integer> axis = new ArrayList<>();
-
-    private ArrayList<Bitmap> savedImages = new ArrayList<>();
-
     /**
      * Whether the app is recording video now
      */
@@ -213,12 +183,6 @@ public class CaptureHighSpeedVideoMode  extends Fragment
      * A {@link Semaphore} to prevent the app from exiting before closing the camera.
      */
     private Semaphore mCameraOpenCloseLock = new Semaphore(1);
-
-    public static File videoFile;
-
-    private int nClients;
-
-    private String currentDateAndTime;
 
     /**
      * {@link CameraDevice.StateCallback} is called when {@link CameraDevice} changes its status.
@@ -301,7 +265,7 @@ public class CaptureHighSpeedVideoMode  extends Fragment
 
         // Pick the smallest of those, assuming we found any
         if (bigEnough.size() > 0) {
-            return Collections.max(bigEnough, new CaptureHighSpeedVideoMode.CompareSizesByArea());
+            return Collections.max(bigEnough, new CompareSizesByArea());
         } else {
             Log.e(TAG, "Couldn't find any suitable preview size");
             return choices[0];
@@ -317,49 +281,13 @@ public class CaptureHighSpeedVideoMode  extends Fragment
     @Override
     public void onViewCreated(final View view, Bundle savedInstanceState) {
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
-        linesImageView = (ImageView) view.findViewById(R.id.linesImageView);
         mRecButtonVideo = (Button) view.findViewById(R.id.video_record);
         mRecButtonVideo.setOnClickListener(this);
-
-        //Todo: Handle multiple clients
-        //nClients = ServerConnectionActivity.mServerChatService.getClients();
-        nClients = 1;
         View decorView = getActivity().getWindow().getDecorView();
         getActivity().getWindow().setBackgroundDrawable(new ColorDrawable(Color.parseColor("#000000")));
-        int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
+        int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
         decorView.setSystemUiVisibility(uiOptions);
-    }
 
-    private void setUpLines(int clients, int width, int height) {
-        Log.e(TAG, "setUpLines() called!");
-
-        axis.clear();
-
-        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        linesImageView.setImageBitmap(bitmap);
-
-        // Line
-        Paint paint = new Paint();
-        paint.setColor(Color.RED);
-        paint.setStrokeWidth(3);
-
-        int starty = 0;
-        int endy = height - 1;
-
-        double startx;
-        double endx;
-        double fraction;
-
-        for (int i = 1; i < clients; i++) {
-            fraction = 1.0 / clients;
-            Log.e(TAG, "Fraction: " + fraction);
-            startx = fraction * i * width;
-            endx = startx;
-            Log.e(TAG, "X coordinate: " + startx);
-            canvas.drawLine((int) startx, starty, (int) endx, endy, paint);
-            axis.add((int) startx);
-        }
     }
 
     @Override
@@ -369,7 +297,7 @@ public class CaptureHighSpeedVideoMode  extends Fragment
         startBackgroundThread();
         View decorView = getActivity().getWindow().getDecorView();
         getActivity().getWindow().setBackgroundDrawable(new ColorDrawable(Color.parseColor("#000000")));
-        int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
+        int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
         decorView.setSystemUiVisibility(uiOptions);
         if (mTextureView.isAvailable()) {
             openCamera(mTextureView.getWidth(), mTextureView.getHeight());
@@ -391,7 +319,7 @@ public class CaptureHighSpeedVideoMode  extends Fragment
     @Override
     public void onClick(View view) {
         View decorView = getActivity().getWindow().getDecorView();
-        int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
+        int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
         switch (view.getId()) {
             case R.id.video_record: {
                 decorView.setSystemUiVisibility(uiOptions);
@@ -448,7 +376,7 @@ public class CaptureHighSpeedVideoMode  extends Fragment
      */
     private void requestVideoPermissions() {
         if (shouldShowRequestPermissionRationale(VIDEO_PERMISSIONS)) {
-            new CaptureHighSpeedVideoMode.ConfirmationDialog().show(getChildFragmentManager(), FRAGMENT_DIALOG);
+            new ConfirmationDialog().show(getChildFragmentManager(), FRAGMENT_DIALOG);
         } else {
             FragmentCompat.requestPermissions(this, VIDEO_PERMISSIONS, REQUEST_VIDEO_PERMISSIONS);
         }
@@ -462,25 +390,14 @@ public class CaptureHighSpeedVideoMode  extends Fragment
             if (grantResults.length == VIDEO_PERMISSIONS.length) {
                 for (int result : grantResults) {
                     if (result != PackageManager.PERMISSION_GRANTED) {
-                        CaptureHighSpeedVideoMode.ErrorDialog.newInstance(getString(Integer.parseInt("0")))
+                        ErrorDialog.newInstance("This sample needs camera permission.")
                                 .show(getChildFragmentManager(), FRAGMENT_DIALOG);
                         break;
                     }
                 }
             } else {
-                CaptureHighSpeedVideoMode.ErrorDialog.newInstance(getString(Integer.parseInt("0")))
+                ErrorDialog.newInstance("This sample needs camera permission.")
                         .show(getChildFragmentManager(), FRAGMENT_DIALOG);
-            }
-        } else if (requestCode == REQUEST_EXTERNAL_STORAGE) {
-            // If request is cancelled, the result arrays are empty.
-            if (grantResults.length > 0
-                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                try {
-                    setUpMediaRecorder();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            } else {
             }
         } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -533,10 +450,8 @@ public class CaptureHighSpeedVideoMode  extends Fragment
             }
             mVideoFps = map.getHighSpeedVideoFpsRangesFor(mVideoSize);
 
-            mPreviewSize = new Size(1280, 720);
-
-//            mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
-//                    width, height, mVideoSize);
+            mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
+                    width, height, mVideoSize);
 
             // FPS
             availableFpsRange = map.getHighSpeedVideoFpsRangesFor(mVideoSize);
@@ -548,7 +463,6 @@ public class CaptureHighSpeedVideoMode  extends Fragment
                 }
             }
             min = max;
-
             for (Range<Integer> r : availableFpsRange) {
                 if (min > r.getLower()) {
                     min = r.getUpper();
@@ -565,13 +479,11 @@ public class CaptureHighSpeedVideoMode  extends Fragment
                 Log.d("RANGES", "[ " + r.getLower() + " , " + r.getUpper() + " ]");
             }
             Log.d("RANGE", "[ " + min + " , " + max + " ]");
-            orientationOfScreen = getResources().getConfiguration().orientation;
-            if (orientationOfScreen == Configuration.ORIENTATION_LANDSCAPE) {
+            int orientation = getResources().getConfiguration().orientation;
+            if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
                 mTextureView.setAspectRatio(mPreviewSize.getWidth(), mPreviewSize.getHeight());
-                setUpLines(nClients, 1280, 720);
             } else {
                 mTextureView.setAspectRatio(mPreviewSize.getHeight(), mPreviewSize.getWidth());
-                setUpLines(nClients, 720, 1280);
             }
             configureTransform(width, height);
             mMediaRecorder = new MediaRecorder();
@@ -593,7 +505,7 @@ public class CaptureHighSpeedVideoMode  extends Fragment
         } catch (NullPointerException e) {
             // Currently an NPE is thrown when the Camera2API is used but not supported on the
             // device this code runs.
-            CaptureHighSpeedVideoMode.ErrorDialog.newInstance(getString(Integer.parseInt("0")))
+            ErrorDialog.newInstance("This device doesn't support Camera2 API.")
                     .show(getChildFragmentManager(), FRAGMENT_DIALOG);
         } catch (InterruptedException e) {
             throw new RuntimeException("Interrupted while trying to lock camera opening.");
@@ -706,9 +618,10 @@ public class CaptureHighSpeedVideoMode  extends Fragment
     }
 
     private void setUpCaptureRequestBuilder(CaptureRequest.Builder builder) {
-        Range<Integer> fpsRange = Range.create(240, 240);
-//        Range<Integer> fpsRange = getHighestFpsRange(availableFpsRange);
+//        Range<Integer> fpsRange = Range.create(240, 240);
+        Range<Integer> fpsRange = getHighestFpsRange(availableFpsRange);
         builder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRange);
+
     }
 
     /**
@@ -753,9 +666,8 @@ public class CaptureHighSpeedVideoMode  extends Fragment
         mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.WEBM);
         videoFile = getVideoFile(activity);
         mMediaRecorder.setOutputFile(videoFile.getAbsolutePath());
-        mMediaRecorder.setVideoEncodingBitRate(1000000000);
-        mMediaRecorder.setVideoFrameRate(240);
-//        mMediaRecorder.setCaptureRate(120);
+        mMediaRecorder.setVideoEncodingBitRate(20000000);
+        mMediaRecorder.setVideoFrameRate(120);
         mMediaRecorder.setVideoSize(mVideoSize.getWidth(), mVideoSize.getHeight());
         mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.VP8);
         mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
@@ -772,7 +684,6 @@ public class CaptureHighSpeedVideoMode  extends Fragment
      * @return path + filename
      */
     private File getVideoFile(Context context) {
-
         String root = Environment.getExternalStorageDirectory().toString();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
         currentDateAndTime = sdf.format(new Date());
@@ -785,24 +696,14 @@ public class CaptureHighSpeedVideoMode  extends Fragment
     private void startRecordingVideo() {
         try {
             // UI
-            Toast.makeText(getContext(), "Recording!", Toast.LENGTH_SHORT).show();
             mIsRecordingVideo = true;
-            mRecButtonVideo.setText("Stop");
             surfaces.clear();
-            if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    != PackageManager.PERMISSION_GRANTED) { // Permission is not granted
-
-                ActivityCompat.requestPermissions(getActivity(),
-                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                        0);
-            }else{ // Permission is granted
-                setUpMediaRecorder();
-            }
+            setUpMediaRecorder();
             SurfaceTexture texture = mTextureView.getSurfaceTexture();
             assert texture != null;
             texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
             mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
-            List<Surface> surfaces = new ArrayList<>();
+//            List<Surface> surfaces = new ArrayList<>();
             Surface previewSurface = new Surface(texture);
             surfaces.add(previewSurface);
             mPreviewBuilder.addTarget(previewSurface);
@@ -830,47 +731,9 @@ public class CaptureHighSpeedVideoMode  extends Fragment
                     }
                 }
             }, mBackgroundHandler);
+            mRecButtonVideo.setText("Stop");
             // Start recording
             mMediaRecorder.start();
-//            new TimeVideoStart(getActivity()).execute();
-
-            mSensorEventListener = new SensorEventListener() {
-                float[] mGravity;
-                float[] mGeomagnetic;
-
-                @Override
-                public void onSensorChanged(SensorEvent sensorEvent) {
-                    if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
-                        mGravity = sensorEvent.values;
-                    if (sensorEvent.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
-                        mGeomagnetic = sensorEvent.values;
-                    if (mGravity != null && mGeomagnetic != null) {
-                        float R[] = new float[9];
-                        float I[] = new float[9];
-                        boolean success = SensorManager.getRotationMatrix(R, I, mGravity, mGeomagnetic);
-                        if (success) {
-                        }
-                        rotationMatrix = R;
-                    }
-                }
-
-                @Override
-                public void onAccuracyChanged(Sensor sensor, int i) {
-
-                }
-            };
-
-            VideoHighFPSActivity.mSensorManager.registerListener(mSensorEventListener, VideoHighFPSActivity.mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_FASTEST);
-            VideoHighFPSActivity.mSensorManager.registerListener(mSensorEventListener, VideoHighFPSActivity.mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_FASTEST);
-
-            Handler handler = new Handler();
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    VideoHighFPSActivity.mSensorManager.unregisterListener(mSensorEventListener);
-                }
-            }, 1000);
-
 
         } catch (IllegalStateException | IOException | CameraAccessException e) {
             e.printStackTrace();
@@ -878,11 +741,9 @@ public class CaptureHighSpeedVideoMode  extends Fragment
     }
 
     private void stopRecordingVideo() {
-        mRecButtonVideo.setEnabled(false);
         // UI
         mIsRecordingVideo = false;
-        VideoActivity.videoStopTimeInMillis = System.currentTimeMillis();
-        mRecButtonVideo.setText("Processing...");
+        mRecButtonVideo.setText("Processing");
         // Stop recording
         try {
             mPreviewSessionHighSpeed.stopRepeating();
@@ -890,323 +751,14 @@ public class CaptureHighSpeedVideoMode  extends Fragment
             e.printStackTrace();
         }
 
-        new TimeVideoStop(getActivity()).execute();
-        new TimeServer(getActivity()).execute();
-
         mMediaRecorder.stop();
         mMediaRecorder.reset();
         Activity activity = getActivity();
         if (null != activity) {
-            Toast.makeText(activity, "Video saved, please wait for a file to process...",
+            Toast.makeText(activity, "Video saved: " + getVideoFile(activity),
                     Toast.LENGTH_SHORT).show();
         }
         startPreview();
-
-        File path = getContext().getExternalFilesDir(null);
-        final File VideoData = new File(path, "VideoData.txt");
-
-        final String filePath = videoFile.getPath();
-
-//        boolean isAllTimesReceived = true;
-//
-//        for (int i = 0; i < nClients; i++) {
-//            isAllTimesReceived = isAllTimesReceived && ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getIsTimeReceived();
-//        }
-//
-//        while (isAllTimesReceived) {
-//            isAllTimesReceived = true;
-//            for (int i = 0; i < nClients; i++) {
-//                isAllTimesReceived = isAllTimesReceived && ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getIsTimeReceived();
-//            }
-//        }
-//
-//        Log.e("isAllTimesReceived: ", ""+isAllTimesReceived);
-//
-
-//         wait until all Target Times are received.
-
-        // Todo: Handle this
-//        while(!(nClients == ServerConnectionActivity.mServerChatService.getIsAllTimeReceived())) {
-////            // wait
-////        }
-
-        MediaMetadataRetriever mediaMetadataRetriever = new MediaMetadataRetriever();
-        mediaMetadataRetriever.setDataSource(filePath);
-
-        long duration = Long.parseLong(mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION));
-
-        int height, width;
-
-        FFmpegMediaMetadataRetriever mediaRetriever = new FFmpegMediaMetadataRetriever();
-        mediaRetriever.setDataSource(filePath);
-
-        Bitmap sample = mediaRetriever.getFrameAtTime(0);
-
-        height = sample.getHeight();
-        width = sample.getWidth();
-
-        String root = Environment.getExternalStorageDirectory().toString();
-        File myDir = new File(root + "/MSD/" + currentDateAndTime);
-
-        File jumpStats = new File(myDir, "jumpStats.txt");
-
-        File rotationMatrixFile = new File(myDir, "rotationMatrixFileCamera.txt");
-
-        try {
-            BufferedWriter out = new BufferedWriter(new FileWriter(rotationMatrixFile, true), 1024);
-            String entry = "";
-            for (int i = 0; i < rotationMatrix.length; i++) {
-                entry += rotationMatrix[i] + " ";
-            }
-            out.write(entry);
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            BufferedWriter out = new BufferedWriter(new FileWriter(jumpStats, true), 1024);
-            String entry = "DeviceId, TargetTime, JumpStart, JumpEnd, VideoDuration, VideoEndUTC, DataStartUTC, DataDuration\n";
-            out.write(entry);
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        long averageTime = 0;
-
-        for (int i = 0; i < nClients; i++) {
-
-            Bitmap savedBitmap;
-
-            //long timeToSend = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getTargetTime();
-            //String deviceName = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getConnectedDeviceName();
-            //String address = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getConnectedDeviceAddress();
-            //ArrayList<String> accData = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getAccData();
-            //ArrayList<String> horizontalAccelerationData = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getHorAccData();
-
-            long timeToSend = ServerConnectionActivity.mServerDataModel.getTargetTime();
-            //String deviceName = ServerConnectionActivity.mServerDataModel.getConnectedDeviceName();
-            //String address = ServerConnectionActivity.mServerDataModel.getConnectedDeviceAddress();
-            ArrayList<String> accData = ServerConnectionActivity.mServerDataModel.getAccData();
-            ArrayList<String> horizontalAccelerationData = ServerConnectionActivity.mServerDataModel.getHorAccData();
-
-//            ArrayList<String> generalAccDataAlongX = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getGeneralAccDataAlongX();
-//            ArrayList<String> generalAccDataAlongY = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getGeneralAccDataAlongY();
-//            ArrayList<String> generalAccDataAlongZ = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getGeneralAccDataAlongZ();
-
-            ArrayList<String> generalAccDataAlongX = ServerConnectionActivity.mServerDataModel.getGeneralAccDataAlongX();
-            ArrayList<String> generalAccDataAlongY = ServerConnectionActivity.mServerDataModel.getGeneralAccDataAlongY();
-            ArrayList<String> generalAccDataAlongZ = ServerConnectionActivity.mServerDataModel.getGeneralAccDataAlongZ();
-
-//            ArrayList<String> gravityX = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getGravityX();
-//            ArrayList<String> gravityY = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getGravityY();
-//            ArrayList<String> gravityZ = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getGravityZ();
-
-            ArrayList<String> gravityX = ServerConnectionActivity.mServerDataModel.getGravityX();
-            ArrayList<String> gravityY = ServerConnectionActivity.mServerDataModel.getGravityY();
-            ArrayList<String> gravityZ = ServerConnectionActivity.mServerDataModel.getGravityZ();
-
-
-//            ArrayList<String> gyroscopeX = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getGyroscopeX();
-//            ArrayList<String> gyroscopeY = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getGyroscopeY();
-//            ArrayList<String> gyroscopeZ = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getGyroscopeZ();
-
-            ArrayList<String> gyroscopeX = ServerConnectionActivity.mServerDataModel.getGyroscopeX();
-            ArrayList<String> gyroscopeY = ServerConnectionActivity.mServerDataModel.getGyroscopeY();
-            ArrayList<String> gyroscopeZ = ServerConnectionActivity.mServerDataModel.getGyroscopeZ();
-
-
-//            ArrayList<String> rotationMatrixDataPhoneList = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getRotationMatrix();
-
-//            ArrayList<String> timeData = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getTimeData();
-//            long jumpStart = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getTimeJumpStart();
-//            long jumpEnd = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getTimeJumpEnd();
-//            long dataStartTime = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getDataStartTime();
-
-
-            ArrayList<String> timeData = ServerConnectionActivity.mServerDataModel.getTimeData();
-            long jumpStart = ServerConnectionActivity.mServerDataModel.getTimeJumpStart();
-            long jumpEnd = ServerConnectionActivity.mServerDataModel.getTimeJumpEnd();
-            long dataStartTime = ServerConnectionActivity.mServerDataModel.getDataStartTime();
-
-
-            long diff = timeToSend - (VideoActivity.videoStopTimeInMillis - duration);
-            averageTime += diff;
-            jumpStart = jumpStart - (VideoActivity.videoStopTimeInMillis - duration);
-            jumpEnd = jumpEnd - (VideoActivity.videoStopTimeInMillis - duration);
-
-            //TODO: handle deviceID properly
-            //String deviceId = deviceName + "_" + address;
-            String deviceId = "SportWatch2";
-
-            File deviceFolder = new File(myDir.getPath() + "/" + deviceId);
-            deviceFolder.mkdirs();
-            File dataFile = new File(deviceFolder, "VerticalAccelerationData_" + deviceId + ".txt");
-            File dataHorizontalFile = new File(deviceFolder, "HorizontalAccelerationData_" + deviceId + ".txt");
-            File generalAccDataFile = new File(deviceFolder, "GeneralAccData_" + deviceId + ".txt");
-            File gravityDataFile = new File(deviceFolder, "GravityData_" + deviceId + ".txt");
-            File gyroscopeDataFile = new File(deviceFolder, "GyroscopeData_" + deviceId + ".txt");
-//            File rotationMatrixDataPhoneFile = new File(myDir, "RotationMatrixDataPhone_" + deviceId + ".txt");
-
-            Log.d(TAG, "Time" + i + ": " + timeToSend);
-
-//            Bitmap frame = mediaRetriever.getFrameAtTime(diff * 1000, FFmpegMediaMetadataRetriever.OPTION_CLOSEST);
-//
-//            if (orientationOfScreen == Configuration.ORIENTATION_PORTRAIT) {
-//                Matrix matrix = new Matrix();
-//
-//                matrix.postRotate(90);
-//
-//                Bitmap scaledBitmap = Bitmap.createScaledBitmap(frame,width,height,true);
-//
-//                Bitmap rotatedBitmap = Bitmap.createBitmap(scaledBitmap, 0, 0, scaledBitmap.getWidth(), scaledBitmap.getHeight(), matrix, true);
-//
-//                saveImage(rotatedBitmap, currentDateAndTime, deviceId);
-//
-//                savedBitmap = rotatedBitmap;
-//
-//                savedImages.add(savedBitmap);
-//            } else {
-//                savedBitmap = frame;
-//                saveImage(savedBitmap, currentDateAndTime, deviceId);
-//                savedImages.add(savedBitmap);
-//            }
-
-            try {
-                BufferedWriter out = new BufferedWriter(new FileWriter(jumpStats, true), 1024);
-                String entry = deviceId + ", " + diff + ", " + jumpStart + ", " + jumpEnd + ", " + duration + ", " + VideoActivity.videoStopTimeInMillis + ", " + dataStartTime + ", " + timeData.get(timeData.size() - 1) + "\n";
-                out.write(entry);
-                out.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            for (int j = 0; j < accData.size(); j++) {
-                try {
-                    BufferedWriter out = new BufferedWriter(new FileWriter(dataFile, true), 1024);
-                    String entry = accData.get(j) + " " + timeData.get(j) + "\n";
-                    out.write(entry);
-                    out.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            for (int j = 0; j < horizontalAccelerationData.size(); j++) {
-                try {
-                    BufferedWriter out = new BufferedWriter(new FileWriter(dataHorizontalFile, true), 1024);
-                    String entry = horizontalAccelerationData.get(j) + " " + timeData.get(j) + "\n";
-                    out.write(entry);
-                    out.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            for (int j = 0; j < generalAccDataAlongX.size(); j++) {
-                try {
-                    BufferedWriter out = new BufferedWriter(new FileWriter(generalAccDataFile, true), 1024);
-                    String entry = generalAccDataAlongX.get(j) + " " + generalAccDataAlongY.get(j) + " " + generalAccDataAlongZ.get(j) + " " + timeData.get(j) + "\n";
-                    out.write(entry);
-                    out.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            for (int j = 0; j < gravityX.size(); j++) {
-                try {
-                    BufferedWriter out = new BufferedWriter(new FileWriter(gravityDataFile, true), 1024);
-                    String entry = gravityX.get(j) + " " + gravityY.get(j) + " " + gravityZ.get(j) + " " + timeData.get(j) + "\n";
-                    out.write(entry);
-                    out.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            for (int j = 0; j < gyroscopeX.size(); j++) {
-                try {
-                    BufferedWriter out = new BufferedWriter(new FileWriter(gyroscopeDataFile, true), 1024);
-                    String entry = gyroscopeX.get(j) + " " + gyroscopeY.get(j) + " " + gyroscopeZ.get(j) + " " + timeData.get(j) + "\n";
-                    out.write(entry);
-                    out.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-//            for (int j = 0; j < rotationMatrixDataPhoneList.size(); j++) {
-//                try {
-//                    BufferedWriter out = new BufferedWriter(new FileWriter(rotationMatrixDataPhoneFile, true), 1024);
-//                    String entry = rotationMatrixDataPhoneList.get(j) + " " + timeData.get(j) + "\n";
-//                    out.write(entry);
-//                    out.close();
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-
-//            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-//            savedBitmap.compress(Bitmap.CompressFormat.PNG, 100, bytes);
-//            byte[] image = bytes.toByteArray();
-
-//            String toSend = BitMapToString(savedBitmap);
-//            Log.e(TAG, "Sending String: " + toSend);
-//            toSend += "#";
-//            ServerConnectionActivity.mServerChatService.writeToOneThread(toSend.getBytes(), ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i));
-
-//            int byteArraySize = image.length;
-//            Log.e(TAG, "Byte Array Size: " + byteArraySize);
-//            byte[] arraySize = new byte[4];
-//            arraySize[0] = (byte) (byteArraySize & 0xFF);
-//            arraySize[1] = (byte) ((byteArraySize >> 8) & 0xFF);
-//            arraySize[2] = (byte) ((byteArraySize >> 16) & 0xFF);
-//            arraySize[3] = (byte) ((byteArraySize >> 24) & 0xFF);
-
-//            String imageBytes = null;
-//            try {
-//                imageBytes = bytes.toString("UTF-8");
-//            } catch (UnsupportedEncodingException e) {
-//                e.printStackTrace();
-//            }
-//            imageBytes += '#';
-//            System.out.println("Last Character: " + imageBytes.charAt(imageBytes.length() - 1));
-//            byte[] newImage = new byte[0];
-//            try {
-//                newImage = imageBytes.getBytes("UTF-8");
-//            } catch (UnsupportedEncodingException e) {
-//                e.printStackTrace();
-//            }
-//            ServerConnectionActivity.mServerChatService.writeToOneThread(arraySize, ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i));
-//            ServerConnectionActivity.mServerChatService.writeToOneThread(image, ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i));
-        }
-
-//        if (nClients == 2) {
-//
-//            averageTime = averageTime / nClients;
-//
-//            Bitmap averageFrame = mediaRetriever.getFrameAtTime(averageTime * 1000, FFmpegMediaMetadataRetriever.OPTION_CLOSEST);
-//
-//            Matrix matrix = new Matrix();
-//
-//            matrix.postRotate(90);
-//
-//            Bitmap scaledBitmap = Bitmap.createScaledBitmap(averageFrame, width, height, true);
-//
-//            Bitmap rotatedBitmap = Bitmap.createBitmap(scaledBitmap, 0, 0, scaledBitmap.getWidth(), scaledBitmap.getHeight(), matrix, true);
-//
-//            saveImage(rotatedBitmap, currentDateAndTime, "Average");
-//
-//            Bitmap blended1 = blendImages(savedImages.get(0), savedImages.get(1), axis.get(0));
-//            Bitmap blended2 = blendImages(savedImages.get(1), savedImages.get(0), axis.get(0));
-//
-//            saveImage(blended1, currentDateAndTime, "Blended1");
-//            saveImage(blended2, currentDateAndTime, "Blended2");
-//        }
-
-        Toast.makeText(getContext(), "All data is saved!", Toast.LENGTH_SHORT).show();
     }
 
     private void stopRecordingVideoOnPause() {
@@ -1232,14 +784,15 @@ public class CaptureHighSpeedVideoMode  extends Fragment
             return Long.signum((long) lhs.getWidth() * lhs.getHeight() -
                     (long) rhs.getWidth() * rhs.getHeight());
         }
+
     }
 
     public static class ErrorDialog extends DialogFragment {
 
         private static final String ARG_MESSAGE = "message";
 
-        public static CaptureHighSpeedVideoMode.ErrorDialog newInstance(String message) {
-            CaptureHighSpeedVideoMode.ErrorDialog dialog = new CaptureHighSpeedVideoMode.ErrorDialog();
+        public static ErrorDialog newInstance(String message) {
+            ErrorDialog dialog = new ErrorDialog();
             Bundle args = new Bundle();
             args.putString(ARG_MESSAGE, message);
             dialog.setArguments(args);
@@ -1259,14 +812,16 @@ public class CaptureHighSpeedVideoMode  extends Fragment
                     })
                     .create();
         }
+
     }
 
     public static class ConfirmationDialog extends DialogFragment {
+
         @Override
         public Dialog onCreateDialog(Bundle savedInstanceState) {
             final Fragment parent = getParentFragment();
             return new AlertDialog.Builder(getActivity())
-                    .setMessage("efddsf")
+                    .setMessage("This sample needs camera permission.")
                     .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
@@ -1283,108 +838,7 @@ public class CaptureHighSpeedVideoMode  extends Fragment
                             })
                     .create();
         }
+
     }
 
-    public static String saveImage(Bitmap finalBitmap, String folder, String deviceId) {
-        String root = Environment.getExternalStorageDirectory().toString();
-        File myDir = new File(root + "/MSD/" + folder);
-        String fname = "Image_" + deviceId + ".jpg";
-        File file = new File(myDir, fname);
-        if (file.exists()) file.delete();
-        try {
-            FileOutputStream out = new FileOutputStream(file);
-            finalBitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
-            out.flush();
-            out.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return fname;
-    }
-
-//    private double amountOfBluriness(Bitmap bmp) {
-//        Mat destination = new Mat();
-//        Mat matGray = new Mat();
-//
-//        Mat image = new Mat();
-//        Utils.bitmapToMat(bmp, image);
-//        Imgproc.cvtColor(image, matGray, Imgproc.COLOR_BGR2GRAY);
-//        Imgproc.Laplacian(matGray, destination, 3);
-//        MatOfDouble median = new MatOfDouble();
-//        MatOfDouble std= new MatOfDouble();
-//        Core.meanStdDev(destination, median , std);
-//
-//        return Math.pow(std.get(0,0)[0],2);
-//    }
-
-    private Bitmap blendImages(Bitmap bm1, Bitmap bm2, int axis) {
-
-        // Parameters
-        int axisOffset = 7;
-        int height = bm1.getHeight();
-        int width = bm2.getWidth();
-        double blendingCoefficient = 1.0 / (2 * axisOffset + 1);
-
-        // Create a resulting bitmap
-        Bitmap result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-
-        // Fill the left part of the result Bitmap
-        for (int i = 0; i < height; i++) {
-            for (int j = 0; j < (axis - axisOffset); j++) {
-                result.setPixel(j, i, bm1.getPixel(j, i));
-            }
-        }
-
-        // Fill the right part of the result Bitmap
-        for (int i = 0; i < height; i++) {
-            for (int j = axis + axisOffset + 1; j < width; j++) {
-                result.setPixel(j, i, bm2.getPixel(j, i));
-            }
-        }
-
-        // Fill the blending part
-        for (int i = 0; i < height; i++) {
-            int step = 1;
-            for (int j = axis - axisOffset; j < (axis + axisOffset + 1); j++) {
-
-                int pixelBm1 = bm1.getPixel(j, i);
-                int pixelBm2 = bm2.getPixel(j, i);
-
-                int alphaBm1 = Color.alpha(pixelBm1);
-                int alphaBm2 = Color.alpha(pixelBm2);
-
-                int redBm1 = Color.red(pixelBm1);
-                int redBm2 = Color.red(pixelBm2);
-
-                int greenBm1 = Color.green(pixelBm1);
-                int greenBm2 = Color.green(pixelBm2);
-
-                int blueBm1 = Color.blue(pixelBm1);
-                int blueBm2 = Color.blue(pixelBm2);
-
-                double blendingCoefficientWithStep = blendingCoefficient * step;
-
-                int A = (int) (alphaBm1 * (1 - blendingCoefficientWithStep) + alphaBm2 * blendingCoefficientWithStep);
-                int R = (int) (redBm1 * (1 - blendingCoefficientWithStep) + redBm2 * blendingCoefficientWithStep);
-                int G = (int) (greenBm1 * (1 - blendingCoefficientWithStep) + greenBm2 * blendingCoefficientWithStep);
-                int B = (int) (blueBm1 * (1 - blendingCoefficientWithStep) + blueBm2 * blendingCoefficientWithStep);
-
-                int colorResult = (A & 0xff) << 24 | (R & 0xff) << 16 | (G & 0xff) << 8 | (B & 0xff);
-
-                result.setPixel(j, i, colorResult);
-
-                step++;
-            }
-        }
-
-        return result;
-    }
-
-    public String BitMapToString(Bitmap bitmap) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
-        byte[] b = baos.toByteArray();
-        String temp = Base64.encodeToString(b, Base64.DEFAULT);
-        return temp;
-    }
 }
