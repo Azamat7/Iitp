@@ -10,11 +10,16 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.graphics.drawable.ColorDrawable;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -26,6 +31,7 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.CamcorderProfile;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Environment;
@@ -47,7 +53,9 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -57,6 +65,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+
+import wseemann.media.FFmpegMediaMetadataRetriever;
 
 public class CaptureHighSpeedVideoMode extends Fragment
         implements View.OnClickListener, FragmentCompat.OnRequestPermissionsResultCallback {
@@ -102,6 +112,8 @@ public class CaptureHighSpeedVideoMode extends Fragment
 
     public static File videoFile;
     private String currentDateAndTime;
+    private SensorEventListener mSensorEventListener;
+    private float[] rotationMatrix;
 
 
     /**
@@ -667,7 +679,7 @@ public class CaptureHighSpeedVideoMode extends Fragment
         videoFile = getVideoFile(activity);
         mMediaRecorder.setOutputFile(videoFile.getAbsolutePath());
         mMediaRecorder.setVideoEncodingBitRate(20000000);
-        mMediaRecorder.setVideoFrameRate(120);
+        mMediaRecorder.setVideoFrameRate(60);
         mMediaRecorder.setVideoSize(mVideoSize.getWidth(), mVideoSize.getHeight());
         mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.VP8);
         mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
@@ -735,15 +747,79 @@ public class CaptureHighSpeedVideoMode extends Fragment
             // Start recording
             mMediaRecorder.start();
 
+
+//            mSensorEventListener = new SensorEventListener() {
+//                float[] mGravity;
+//                float[] mGeomagnetic;
+//
+//                @Override
+//                public void onSensorChanged(SensorEvent sensorEvent) {
+//                    if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
+//                        mGravity = sensorEvent.values;
+//                    if (sensorEvent.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
+//                        mGeomagnetic = sensorEvent.values;
+//                    if (mGravity != null && mGeomagnetic != null) {
+//                        float R[] = new float[9];
+//                        float I[] = new float[9];
+//                        boolean success = SensorManager.getRotationMatrix(R, I, mGravity, mGeomagnetic);
+//                        if (success) {
+//                        }
+//                        rotationMatrix = R;
+//                    }
+//                }
+//
+//                @Override
+//                public void onAccuracyChanged(Sensor sensor, int i) {
+//
+//                }
+//            };
+//
+//            VideoHighFPSActivity.mSensorManager.registerListener(mSensorEventListener, VideoHighFPSActivity.mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_FASTEST);
+//            VideoHighFPSActivity.mSensorManager.registerListener(mSensorEventListener, VideoHighFPSActivity.mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_FASTEST);
+//
+//            Handler handler = new Handler();
+//            handler.postDelayed(new Runnable() {
+//                @Override
+//                public void run() {
+//                    VideoHighFPSActivity.mSensorManager.unregisterListener(mSensorEventListener);
+//                }
+//            }, 1000);
+
+
+
         } catch (IllegalStateException | IOException | CameraAccessException e) {
             e.printStackTrace();
         }
     }
 
     private void stopRecordingVideo() {
+//        // UI
+//        mIsRecordingVideo = false;
+//        mRecButtonVideo.setText("Processing");
+//        // Stop recording
+//        try {
+//            mPreviewSessionHighSpeed.stopRepeating();
+//        } catch (CameraAccessException e) {
+//            e.printStackTrace();
+//        }
+//
+//        mMediaRecorder.stop();
+//        mMediaRecorder.reset();
+//        Activity activity = getActivity();
+//        if (null != activity) {
+//            Toast.makeText(activity, "Video saved: " + getVideoFile(activity),
+//                    Toast.LENGTH_SHORT).show();
+//        }
+//        startPreview();
+
+
+
+
+        mRecButtonVideo.setEnabled(false);
         // UI
         mIsRecordingVideo = false;
-        mRecButtonVideo.setText("Processing");
+        VideoActivity.videoStopTimeInMillis = System.currentTimeMillis();
+        mRecButtonVideo.setText("Processing...");
         // Stop recording
         try {
             mPreviewSessionHighSpeed.stopRepeating();
@@ -751,14 +827,194 @@ public class CaptureHighSpeedVideoMode extends Fragment
             e.printStackTrace();
         }
 
+        new TimeVideoStop(getActivity()).execute();
+        new TimeServer(getActivity()).execute();
+
         mMediaRecorder.stop();
         mMediaRecorder.reset();
         Activity activity = getActivity();
         if (null != activity) {
-            Toast.makeText(activity, "Video saved: " + getVideoFile(activity),
+            Toast.makeText(activity, "Video saved, please wait for a file to process...",
                     Toast.LENGTH_SHORT).show();
         }
         startPreview();
+
+        File path = getContext().getExternalFilesDir(null);
+        final File VideoData = new File(path, "VideoData.txt");
+
+        final String filePath = videoFile.getPath();
+
+
+        // Todo: Handle this
+//        while(!(nClients == ServerConnectionActivity.mServerChatService.getIsAllTimeReceived())) {
+////            // wait
+////        }
+
+        while (ServerConnectionActivity.mServerDataModel == null){
+            //wait
+        }
+
+        MediaMetadataRetriever mediaMetadataRetriever = new MediaMetadataRetriever();
+        mediaMetadataRetriever.setDataSource(filePath);
+
+        long duration = Long.parseLong(mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION));
+
+        int height, width;
+
+        FFmpegMediaMetadataRetriever mediaRetriever = new FFmpegMediaMetadataRetriever();
+        mediaRetriever.setDataSource(filePath);
+
+        Bitmap sample = mediaRetriever.getFrameAtTime(0);
+
+        height = sample.getHeight();
+        width = sample.getWidth();
+
+        String root = Environment.getExternalStorageDirectory().toString();
+        File myDir = new File(root + "/MSD/" + currentDateAndTime);
+
+        File jumpStats = new File(myDir, "jumpStats.txt");
+
+        File rotationMatrixFile = new File(myDir, "rotationMatrixFileCamera.txt");
+
+        try {
+            BufferedWriter out = new BufferedWriter(new FileWriter(rotationMatrixFile, true), 1024);
+            String entry = "";
+            for (int i = 0; i < rotationMatrix.length; i++) {
+                entry += rotationMatrix[i] + " ";
+            }
+            out.write(entry);
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            BufferedWriter out = new BufferedWriter(new FileWriter(jumpStats, true), 1024);
+            String entry = "DeviceId, TargetTime, JumpStart, JumpEnd, VideoDuration, VideoEndUTC, DataStartUTC, DataDuration\n";
+            out.write(entry);
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        long averageTime = 0;
+
+        for (int i = 0; i < 1; i++) {
+
+            Bitmap savedBitmap;
+
+            long timeToSend = ServerConnectionActivity.mServerDataModel.getTargetTime();
+            ArrayList<String> accData = ServerConnectionActivity.mServerDataModel.getAccData();
+            ArrayList<String> horizontalAccelerationData = ServerConnectionActivity.mServerDataModel.getHorAccData();
+
+            ArrayList<String> generalAccDataAlongX = ServerConnectionActivity.mServerDataModel.getGeneralAccDataAlongX();
+            ArrayList<String> generalAccDataAlongY = ServerConnectionActivity.mServerDataModel.getGeneralAccDataAlongY();
+            ArrayList<String> generalAccDataAlongZ = ServerConnectionActivity.mServerDataModel.getGeneralAccDataAlongZ();
+
+            ArrayList<String> gravityX = ServerConnectionActivity.mServerDataModel.getGravityX();
+            ArrayList<String> gravityY = ServerConnectionActivity.mServerDataModel.getGravityY();
+            ArrayList<String> gravityZ = ServerConnectionActivity.mServerDataModel.getGravityZ();
+
+            ArrayList<String> gyroscopeX = ServerConnectionActivity.mServerDataModel.getGyroscopeX();
+            ArrayList<String> gyroscopeY = ServerConnectionActivity.mServerDataModel.getGyroscopeY();
+            ArrayList<String> gyroscopeZ = ServerConnectionActivity.mServerDataModel.getGyroscopeZ();
+
+
+//            ArrayList<String> rotationMatrixDataPhoneList = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getRotationMatrix();
+
+            ArrayList<String> timeData = ServerConnectionActivity.mServerDataModel.getTimeData();
+            long jumpStart = ServerConnectionActivity.mServerDataModel.getTimeJumpStart();
+            long jumpEnd = ServerConnectionActivity.mServerDataModel.getTimeJumpEnd();
+            long dataStartTime = ServerConnectionActivity.mServerDataModel.getDataStartTime();
+
+
+            long diff = timeToSend - (VideoActivity.videoStopTimeInMillis - duration);
+            averageTime += diff;
+            jumpStart = jumpStart - (VideoActivity.videoStopTimeInMillis - duration);
+            jumpEnd = jumpEnd - (VideoActivity.videoStopTimeInMillis - duration);
+
+            //TODO: handle deviceID properly
+            //String deviceId = deviceName + "_" + address;
+            String deviceId = "SportWatch2";
+
+            File deviceFolder = new File(myDir.getPath() + "/" + deviceId);
+            deviceFolder.mkdirs();
+            File dataFile = new File(deviceFolder, "VerticalAccelerationData_" + deviceId + ".txt");
+            File dataHorizontalFile = new File(deviceFolder, "HorizontalAccelerationData_" + deviceId + ".txt");
+            File generalAccDataFile = new File(deviceFolder, "GeneralAccData_" + deviceId + ".txt");
+            File gravityDataFile = new File(deviceFolder, "GravityData_" + deviceId + ".txt");
+            File gyroscopeDataFile = new File(deviceFolder, "GyroscopeData_" + deviceId + ".txt");
+//            File rotationMatrixDataPhoneFile = new File(myDir, "RotationMatrixDataPhone_" + deviceId + ".txt");
+
+            Log.d(TAG, "Time" + i + ": " + timeToSend);
+
+            try {
+                BufferedWriter out = new BufferedWriter(new FileWriter(jumpStats, true), 1024);
+                String entry = deviceId + ", " + diff + ", " + jumpStart + ", " + jumpEnd + ", " + duration + ", " + VideoActivity.videoStopTimeInMillis + ", " + dataStartTime + ", " + timeData.get(timeData.size() - 1) + "\n";
+                out.write(entry);
+                out.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            for (int j = 0; j < accData.size(); j++) {
+                try {
+                    BufferedWriter out = new BufferedWriter(new FileWriter(dataFile, true), 1024);
+                    String entry = accData.get(j) + " " + timeData.get(j) + "\n";
+                    out.write(entry);
+                    out.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            for (int j = 0; j < horizontalAccelerationData.size(); j++) {
+                try {
+                    BufferedWriter out = new BufferedWriter(new FileWriter(dataHorizontalFile, true), 1024);
+                    String entry = horizontalAccelerationData.get(j) + " " + timeData.get(j) + "\n";
+                    out.write(entry);
+                    out.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            for (int j = 0; j < generalAccDataAlongX.size(); j++) {
+                try {
+                    BufferedWriter out = new BufferedWriter(new FileWriter(generalAccDataFile, true), 1024);
+                    String entry = generalAccDataAlongX.get(j) + " " + generalAccDataAlongY.get(j) + " " + generalAccDataAlongZ.get(j) + " " + timeData.get(j) + "\n";
+                    out.write(entry);
+                    out.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            for (int j = 0; j < gravityX.size(); j++) {
+                try {
+                    BufferedWriter out = new BufferedWriter(new FileWriter(gravityDataFile, true), 1024);
+                    String entry = gravityX.get(j) + " " + gravityY.get(j) + " " + gravityZ.get(j) + " " + timeData.get(j) + "\n";
+                    out.write(entry);
+                    out.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            for (int j = 0; j < gyroscopeX.size(); j++) {
+                try {
+                    BufferedWriter out = new BufferedWriter(new FileWriter(gyroscopeDataFile, true), 1024);
+                    String entry = gyroscopeX.get(j) + " " + gyroscopeY.get(j) + " " + gyroscopeZ.get(j) + " " + timeData.get(j) + "\n";
+                    out.write(entry);
+                    out.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+
+        Toast.makeText(getContext(), "All data is saved!", Toast.LENGTH_SHORT).show();
     }
 
     private void stopRecordingVideoOnPause() {
