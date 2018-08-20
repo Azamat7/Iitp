@@ -885,9 +885,9 @@ public class CaptureHighSpeedVideoMode extends Fragment
 ////            // wait
 ////        }
 
-//        while (ServerConnectionActivity.mServerDataModel == null){
-//            //wait
-//        }
+        while (ServerConnectionActivity.mServerDataModel == null){
+            //wait
+        }
 
         MediaMetadataRetriever mediaMetadataRetriever = new MediaMetadataRetriever();
         mediaMetadataRetriever.setDataSource(filePath);

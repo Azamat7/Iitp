@@ -469,6 +469,7 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
 //Retrieve the connected devices//
             Task<List<Node>> nodeListTask =
                     Wearable.getNodeClient(getApplicationContext()).getConnectedNodes();
+
             Log.d("Aitosha","1");
             try {
                 Log.d("Aitosha","2");
@@ -491,6 +492,30 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
                         e.printStackTrace();
                     }
                 }
+
+
+
+
+//            Task<Node> node = Wearable.getNodeClient(getApplicationContext()).getLocalNode();
+//
+//            Log.d("Aitosha","1");
+//            try {
+//                Log.d("Aitosha","2");
+////Block on a task and get the result synchronously//
+//                //List<Node> nodes = Tasks.await(nodeListTask);
+//                Node nodes = Tasks.await(node);
+//                Log.d("Aitosha","3");
+//                Task<Integer> sendMessageTask =
+//                        Wearable.getMessageClient(DataActivity.this).sendMessage(nodes.getId(), path, message.getBytes());
+//
+//                try {
+//                    Log.d("Aitosha","4");
+//                    Integer result = Tasks.await(sendMessageTask);
+////Handle the errors//
+//
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
