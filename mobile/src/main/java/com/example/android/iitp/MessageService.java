@@ -2,6 +2,7 @@ package com.example.android.iitp;
 
 import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.WearableListenerService;
@@ -18,7 +19,7 @@ public class MessageService extends WearableListenerService {
 //...retrieve the message//
 
             final String message = new String(messageEvent.getData());
-
+            Log.d("Aitosha",message);
             Intent messageIntent = new Intent();
             messageIntent.setAction(Intent.ACTION_SEND);
             messageIntent.putExtra("message", message);

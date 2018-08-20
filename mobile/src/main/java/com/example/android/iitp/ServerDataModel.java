@@ -31,8 +31,6 @@ public class ServerDataModel {
     private ArrayList<String> gyroscopeY;
     private ArrayList<String> gyroscopeZ;
 
-    private ArrayList<String> rotationMatrixList;
-
     private ArrayList<String> accDataArrayList;
     private ArrayList<String> horizontalAccDataArrayList;
     private ArrayList<String> timeDataArrayList;
@@ -84,8 +82,6 @@ public class ServerDataModel {
 
     public ArrayList<String> getGyroscopeZ() {return gyroscopeZ;}
 
-    public ArrayList<String> getRotationMatrix() {return rotationMatrixList;}
-
     public ArrayList<String> getTimeData(){
         return timeDataArrayList;
     }
@@ -115,11 +111,9 @@ public class ServerDataModel {
         String strGyroscopeY = elements[10];
         String strGyroscopeZ = elements[11];
 
-        String strRotationMatrix = elements[12];
-
-        String strTimeData = elements[13];
-        String strJumpStart = elements[14];
-        String strJumpEnd = elements[15];
+        String strTimeData = elements[12];
+        String strJumpStart = elements[13];
+        String strJumpEnd = elements[14];
         strJumpEnd = strJumpEnd.substring(0, strJumpEnd.length() - 1);
 
         timeToSend = Long.valueOf(strTargetTime);
@@ -138,8 +132,6 @@ public class ServerDataModel {
         gyroscopeX = new ArrayList<String>(Arrays.asList(strGyroscopeX.split(",")));
         gyroscopeY = new ArrayList<String>(Arrays.asList(strGyroscopeY.split(",")));
         gyroscopeZ = new ArrayList<String>(Arrays.asList(strGyroscopeZ.split(",")));
-
-        rotationMatrixList = new ArrayList<String>(Arrays.asList(strRotationMatrix.split(",")));
 
         timeDataArrayList = new ArrayList<String>(Arrays.asList(strTimeData.split(",")));
 

@@ -58,9 +58,6 @@ public class ServerConnectionActivity extends AppCompatActivity implements Adapt
         spinner.setAdapter(adapter);
         spinner.setOnItemSelectedListener(this);
 
-
-
-
         //Register to receive local broadcasts, which we'll be creating in the next step//
 
         IntentFilter messageFilter = new IntentFilter(Intent.ACTION_SEND);

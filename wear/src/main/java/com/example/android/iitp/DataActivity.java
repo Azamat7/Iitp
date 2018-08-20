@@ -1,6 +1,5 @@
 package com.example.android.iitp;
 
-import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -11,6 +10,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.os.Bundle;
+import android.support.wearable.activity.WearableActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -25,10 +25,12 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-public class DataActivity extends Activity implements Serializable, SensorEventListener{
-
+public class DataActivity extends WearableActivity implements Serializable, SensorEventListener{
+    // ./adb forward tcp:4444 localabstract:/adb-hub
+    // ./adb connect localhost:4444
     public static final float PEAK_THRESHOLD = 10;
     public static final long TRIM_THRESHOLD = 1500;
     private static final String TAG = "message";
@@ -73,7 +75,7 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
 
     private long startTime;
 
-    ArrayList<float[]> rotationMatrixData;
+    //ArrayList<float[]> rotationMatrixData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,7 +115,7 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
         horizontalAccelerationData = new ArrayList<>();
         timeData = new ArrayList<>();
 
-        rotationMatrixData = new ArrayList<>();
+        //rotationMatrixData = new ArrayList<>();
 
 //        String root = Environment.getExternalStorageDirectory().toString();
 //        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
@@ -135,17 +137,11 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
 
             startTime = System.currentTimeMillis();
 
-            if (mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE) != null){
-                Log.d("theta67",mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE).getName());
-            }else{
-                Log.d("theta67","no sensor bruh");
-            }
-
             mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_FASTEST);
             mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE), SensorManager.SENSOR_DELAY_FASTEST);
             mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY), SensorManager.SENSOR_DELAY_FASTEST);
             mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_FASTEST);
-            mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_FASTEST);
+            //mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_FASTEST);
             //mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_HEART_BEAT), SensorManager.SENSOR_DELAY_FASTEST);
             //mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE), SensorManager.SENSOR_DELAY_FASTEST);
         }
@@ -200,14 +196,14 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
         if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
             mGeomagnetic = event.values;
 
-        if (mGravity != null && mGeomagnetic != null) {
-            Rot = new float[9];
-            float I[] = new float[9];
-            boolean success = SensorManager.getRotationMatrix(Rot, I, mGravity, mGeomagnetic);
-            if (success) {
-                Log.e(TAG, "Matrix_R: " + Rot);
-            }
-        }
+//        if (mGravity != null && mGeomagnetic != null) {
+//            Rot = new float[9];
+//            float I[] = new float[9];
+//            boolean success = SensorManager.getRotationMatrix(Rot, I, mGravity, mGeomagnetic);
+//            if (success) {
+//                //Log.e(TAG, "Matrix_R: " + Rot);
+//            }
+//        }
 
         if ((currentTime - lastUpdate) >= 10) {
 
@@ -229,8 +225,8 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
             horizontalAccelerationData.add(horizontalAcceleration);
             timeData.add(currentTime - startTime);
 
-            Log.e(TAG, "R_matrix: " + Rot);
-            rotationMatrixData.add(Rot);
+            //Log.e(TAG, "R_matrix: " + Rot);
+            //rotationMatrixData.add(Rot);
         }
     }
 
@@ -282,6 +278,12 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
             // Get an array of peaks
             ArrayList<Integer> peaks = new ArrayList<Integer>();
             peaks = detectPeaks(accelerometerDataNew, PEAK_THRESHOLD);
+
+
+            //-----------------------------------
+            peaks = new ArrayList<Integer>(
+                    Arrays.asList(1, 7,13,26));
+            //-----------------------------------
 
             // Find a peak with maximum cumulative sum from the left
             float maxValueLeft = calculateCumulativeSumFromLeft(accelerometerDataNew, peaks.get(0));
@@ -370,8 +372,6 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
         String gyroscopeYList = StringUtils.join(gyroscopeY, ", ");
         String gyroscopeZList = StringUtils.join(gyroscopeZ, ", ");
 
-        String rotationMatrixList = StringUtils.join(rotationMatrixData, ", ");
-
         String timeDataStringList = StringUtils.join(timeData, ",");
 
         String jumpStartString = Long.toString(startOfJump);
@@ -388,7 +388,7 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
                 + delimiter + generalAccelerationAlongXList + delimiter + generalAccelerationAlongYList + delimiter
                 + generalAccelerationAlongZList + delimiter + gravityXList + delimiter + gravityYList + delimiter
                 + gravityZList + delimiter + gyroscopeXList + delimiter + gyroscopeYList + delimiter
-                + gyroscopeZList + delimiter + rotationMatrixList + delimiter + timeDataStringList + delimiter + jumpStartString + delimiter + jumpEndString + "#";
+                + gyroscopeZList + delimiter + timeDataStringList + delimiter + jumpStartString + delimiter + jumpEndString + "#";
 
         Log.e(TAG, "msd string length: "+msd.length());
 
@@ -469,19 +469,21 @@ public class DataActivity extends Activity implements Serializable, SensorEventL
 //Retrieve the connected devices//
             Task<List<Node>> nodeListTask =
                     Wearable.getNodeClient(getApplicationContext()).getConnectedNodes();
+            Log.d("Aitosha","1");
             try {
-
+                Log.d("Aitosha","2");
 //Block on a task and get the result synchronously//
                 List<Node> nodes = Tasks.await(nodeListTask);
+                Log.d("Aitosha",Integer.toString(nodes.size()));
                 for (Node node : nodes) {
 
 //Send the message///
-
+                    Log.d("Aitosha","3");
                     Task<Integer> sendMessageTask =
                             Wearable.getMessageClient(DataActivity.this).sendMessage(node.getId(), path, message.getBytes());
 
                     try {
-
+                        Log.d("Aitosha","4");
                         Integer result = Tasks.await(sendMessageTask);
 //Handle the errors//
 

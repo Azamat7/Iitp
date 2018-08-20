@@ -29,6 +29,30 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.TotalCaptureResult;
+import android.Manifest;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.DialogFragment;
+import android.app.Fragment;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.pm.PackageManager;
+import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.Matrix;
+import android.graphics.RectF;
+import android.graphics.SurfaceTexture;
+import android.graphics.drawable.ColorDrawable;
+import android.hardware.SensorEventListener;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraConstrainedHighSpeedCaptureSession;
+import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.CamcorderProfile;
 import android.media.MediaMetadataRetriever;
@@ -40,6 +64,7 @@ import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.v13.app.FragmentCompat;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.util.Range;
 import android.util.Size;
@@ -52,6 +77,13 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.Toast;
+
+import com.example.android.iitp.AutoFitTextureView;
+import com.example.android.iitp.R;
+import com.example.android.iitp.ServerConnectionActivity;
+import com.example.android.iitp.TimeServer;
+import com.example.android.iitp.TimeVideoStop;
+import com.example.android.iitp.VideoActivity;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -68,6 +100,7 @@ import java.util.concurrent.TimeUnit;
 
 import wseemann.media.FFmpegMediaMetadataRetriever;
 
+
 public class CaptureHighSpeedVideoMode extends Fragment
         implements View.OnClickListener, FragmentCompat.OnRequestPermissionsResultCallback {
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
@@ -79,6 +112,7 @@ public class CaptureHighSpeedVideoMode extends Fragment
     private static final String[] VIDEO_PERMISSIONS = {
             Manifest.permission.CAMERA,
             Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
     };
 
     static {
@@ -398,21 +432,23 @@ public class CaptureHighSpeedVideoMode extends Fragment
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         Log.d(TAG, "onRequestPermissionsResult");
-        if (requestCode == REQUEST_VIDEO_PERMISSIONS) {
-            if (grantResults.length == VIDEO_PERMISSIONS.length) {
-                for (int result : grantResults) {
-                    if (result != PackageManager.PERMISSION_GRANTED) {
-                        ErrorDialog.newInstance("This sample needs camera permission.")
-                                .show(getChildFragmentManager(), FRAGMENT_DIALOG);
-                        break;
+        switch(requestCode){
+            case REQUEST_VIDEO_PERMISSIONS: {
+                if (grantResults.length == VIDEO_PERMISSIONS.length) {
+                    for (int result : grantResults) {
+                        if (result != PackageManager.PERMISSION_GRANTED) {
+                            ErrorDialog.newInstance("This sample needs camera permission.")
+                                    .show(getChildFragmentManager(), FRAGMENT_DIALOG);
+                            break;
+                        }
                     }
+                } else {
+                    ErrorDialog.newInstance("This sample needs camera permission.")
+                            .show(getChildFragmentManager(), FRAGMENT_DIALOG);
                 }
-            } else {
-                ErrorDialog.newInstance("This sample needs camera permission.")
-                        .show(getChildFragmentManager(), FRAGMENT_DIALOG);
             }
-        } else {
-            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+            default:
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
 
@@ -462,8 +498,9 @@ public class CaptureHighSpeedVideoMode extends Fragment
             }
             mVideoFps = map.getHighSpeedVideoFpsRangesFor(mVideoSize);
 
-            mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
-                    width, height, mVideoSize);
+            //mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
+            //        width, height, mVideoSize);
+            mPreviewSize = new Size(1280, 720);
 
             // FPS
             availableFpsRange = map.getHighSpeedVideoFpsRangesFor(mVideoSize);
@@ -679,7 +716,7 @@ public class CaptureHighSpeedVideoMode extends Fragment
         videoFile = getVideoFile(activity);
         mMediaRecorder.setOutputFile(videoFile.getAbsolutePath());
         mMediaRecorder.setVideoEncodingBitRate(20000000);
-        mMediaRecorder.setVideoFrameRate(60);
+        mMediaRecorder.setVideoFrameRate(240);
         mMediaRecorder.setVideoSize(mVideoSize.getWidth(), mVideoSize.getHeight());
         mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.VP8);
         mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
@@ -748,42 +785,42 @@ public class CaptureHighSpeedVideoMode extends Fragment
             mMediaRecorder.start();
 
 
-//            mSensorEventListener = new SensorEventListener() {
-//                float[] mGravity;
-//                float[] mGeomagnetic;
-//
-//                @Override
-//                public void onSensorChanged(SensorEvent sensorEvent) {
-//                    if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
-//                        mGravity = sensorEvent.values;
-//                    if (sensorEvent.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
-//                        mGeomagnetic = sensorEvent.values;
-//                    if (mGravity != null && mGeomagnetic != null) {
-//                        float R[] = new float[9];
-//                        float I[] = new float[9];
-//                        boolean success = SensorManager.getRotationMatrix(R, I, mGravity, mGeomagnetic);
-//                        if (success) {
-//                        }
-//                        rotationMatrix = R;
-//                    }
-//                }
-//
-//                @Override
-//                public void onAccuracyChanged(Sensor sensor, int i) {
-//
-//                }
-//            };
-//
-//            VideoHighFPSActivity.mSensorManager.registerListener(mSensorEventListener, VideoHighFPSActivity.mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_FASTEST);
-//            VideoHighFPSActivity.mSensorManager.registerListener(mSensorEventListener, VideoHighFPSActivity.mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_FASTEST);
-//
-//            Handler handler = new Handler();
-//            handler.postDelayed(new Runnable() {
-//                @Override
-//                public void run() {
-//                    VideoHighFPSActivity.mSensorManager.unregisterListener(mSensorEventListener);
-//                }
-//            }, 1000);
+            mSensorEventListener = new SensorEventListener() {
+                float[] mGravity;
+                float[] mGeomagnetic;
+
+                @Override
+                public void onSensorChanged(SensorEvent sensorEvent) {
+                    if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
+                        mGravity = sensorEvent.values;
+                    if (sensorEvent.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
+                        mGeomagnetic = sensorEvent.values;
+                    if (mGravity != null && mGeomagnetic != null) {
+                        float R[] = new float[9];
+                        float I[] = new float[9];
+                        boolean success = SensorManager.getRotationMatrix(R, I, mGravity, mGeomagnetic);
+                        if (success) {
+                        }
+                        rotationMatrix = R;
+                    }
+                }
+
+                @Override
+                public void onAccuracyChanged(Sensor sensor, int i) {
+
+                }
+            };
+
+            VideoHighFPSActivity.mSensorManager.registerListener(mSensorEventListener, VideoHighFPSActivity.mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_FASTEST);
+            VideoHighFPSActivity.mSensorManager.registerListener(mSensorEventListener, VideoHighFPSActivity.mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_FASTEST);
+
+            Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    VideoHighFPSActivity.mSensorManager.unregisterListener(mSensorEventListener);
+                }
+            }, 1000);
 
 
 
@@ -811,8 +848,6 @@ public class CaptureHighSpeedVideoMode extends Fragment
 //                    Toast.LENGTH_SHORT).show();
 //        }
 //        startPreview();
-
-
 
 
         mRecButtonVideo.setEnabled(false);
@@ -850,9 +885,9 @@ public class CaptureHighSpeedVideoMode extends Fragment
 ////            // wait
 ////        }
 
-        while (ServerConnectionActivity.mServerDataModel == null){
-            //wait
-        }
+//        while (ServerConnectionActivity.mServerDataModel == null){
+//            //wait
+//        }
 
         MediaMetadataRetriever mediaMetadataRetriever = new MediaMetadataRetriever();
         mediaMetadataRetriever.setDataSource(filePath);
@@ -860,10 +895,8 @@ public class CaptureHighSpeedVideoMode extends Fragment
         long duration = Long.parseLong(mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION));
 
         int height, width;
-
         FFmpegMediaMetadataRetriever mediaRetriever = new FFmpegMediaMetadataRetriever();
         mediaRetriever.setDataSource(filePath);
-
         Bitmap sample = mediaRetriever.getFrameAtTime(0);
 
         height = sample.getHeight();
@@ -1013,7 +1046,6 @@ public class CaptureHighSpeedVideoMode extends Fragment
             }
         }
 
-
         Toast.makeText(getContext(), "All data is saved!", Toast.LENGTH_SHORT).show();
     }
 
@@ -1094,7 +1126,5 @@ public class CaptureHighSpeedVideoMode extends Fragment
                             })
                     .create();
         }
-
     }
-
 }
