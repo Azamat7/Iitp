@@ -277,12 +277,6 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
             ArrayList<Integer> peaks = new ArrayList<Integer>();
             peaks = detectPeaks(accelerometerDataNew, PEAK_THRESHOLD);
 
-
-            //-----------------------------------
-            peaks = new ArrayList<Integer>(
-                    Arrays.asList(1, 7,13,26));
-            //-----------------------------------
-
             // Find a peak with maximum cumulative sum from the left
             float maxValueLeft = calculateCumulativeSumFromLeft(accelerometerDataNew, peaks.get(0));
             int maxCumulativeSumIndexLeft = peaks.get(0);

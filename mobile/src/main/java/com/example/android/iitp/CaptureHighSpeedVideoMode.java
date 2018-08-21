@@ -26,35 +26,8 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraConstrainedHighSpeedCaptureSession;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.CameraMetadata;
-import android.hardware.camera2.CaptureRequest;
-import android.hardware.camera2.TotalCaptureResult;
-import android.Manifest;
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.DialogFragment;
-import android.app.Fragment;
-import android.content.Context;
-import android.content.DialogInterface;
-import android.content.pm.PackageManager;
-import android.content.res.Configuration;
-import android.graphics.Bitmap;
-import android.graphics.Color;
-import android.graphics.Matrix;
-import android.graphics.RectF;
-import android.graphics.SurfaceTexture;
-import android.graphics.drawable.ColorDrawable;
-import android.hardware.SensorEventListener;
-import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraCaptureSession;
-import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.CameraConstrainedHighSpeedCaptureSession;
-import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
-import android.media.CamcorderProfile;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaRecorder;
 import android.os.Bundle;
@@ -64,7 +37,6 @@ import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.v13.app.FragmentCompat;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.util.Range;
 import android.util.Size;
@@ -75,15 +47,7 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.Toast;
-
-import com.example.android.iitp.AutoFitTextureView;
-import com.example.android.iitp.R;
-import com.example.android.iitp.ServerConnectionActivity;
-import com.example.android.iitp.TimeServer;
-import com.example.android.iitp.TimeVideoStop;
-import com.example.android.iitp.VideoActivity;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -784,7 +748,6 @@ public class CaptureHighSpeedVideoMode extends Fragment
             // Start recording
             mMediaRecorder.start();
 
-
             mSensorEventListener = new SensorEventListener() {
                 float[] mGravity;
                 float[] mGeomagnetic;
@@ -923,7 +886,6 @@ public class CaptureHighSpeedVideoMode extends Fragment
             ArrayList<String> gyroscopeX = mServerDataModel.getGyroscopeX();
             ArrayList<String> gyroscopeY = mServerDataModel.getGyroscopeY();
             ArrayList<String> gyroscopeZ = mServerDataModel.getGyroscopeZ();
-
 
 //            ArrayList<String> rotationMatrixDataPhoneList = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getRotationMatrix();
 
