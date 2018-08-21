@@ -36,8 +36,6 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
     private static final String TAG = "message";
 
     private Button startButton;
-    private boolean isScreenOn = true;
-
 
     private boolean isTargetTimeSent = false;
     private boolean isAccDataSent = false;
@@ -396,7 +394,6 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
         new SendMessage(datapath, msd).start();
 
         Log.e(TAG, "MSD has been sent!");
-
     }
 
 

@@ -853,15 +853,13 @@ public class CaptureHighSpeedVideoMode extends Fragment
                     Toast.LENGTH_SHORT).show();
         }
         startPreview();
-    }
-
-    public void saveToFiles(ServerDataModel mServerDataModel){
 
         File path = getContext().getExternalFilesDir(null);
         final File VideoData = new File(path, "VideoData.txt");
+    }
 
+    public void saveToFiles(ServerDataModel mServerDataModel){
         final String filePath = videoFile.getPath();
-
 
         MediaMetadataRetriever mediaMetadataRetriever = new MediaMetadataRetriever();
         mediaMetadataRetriever.setDataSource(filePath);
@@ -1020,7 +1018,7 @@ public class CaptureHighSpeedVideoMode extends Fragment
             }
         }
 
-        Toast.makeText(getContext(), "All data is saved!", Toast.LENGTH_SHORT).show();
+        Toast.makeText(getActivity(), "All data is saved!", Toast.LENGTH_SHORT).show();
 
         mRecButtonVideo.setEnabled(true);
         mRecButtonVideo.setText("Start");
