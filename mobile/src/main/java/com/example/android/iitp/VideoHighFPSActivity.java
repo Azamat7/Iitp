@@ -1,14 +1,24 @@
 package com.example.android.iitp;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.hardware.SensorManager;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.View;
 
 import com.example.android.iitp.CaptureHighSpeedVideoMode;
 import com.example.android.iitp.R;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
+import com.google.android.gms.wearable.Node;
+import com.google.android.gms.wearable.Wearable;
 
+import java.util.List;
 import java.util.UUID;
 
 public class VideoHighFPSActivity extends AppCompatActivity {
@@ -17,6 +27,8 @@ public class VideoHighFPSActivity extends AppCompatActivity {
 
     public static Bitmap action;
     public static SensorManager mSensorManager;
+    private CaptureHighSpeedVideoMode mCaptureHighSpeedVideoMode;
+    private ServerDataModel mServerDataModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,11 +36,67 @@ public class VideoHighFPSActivity extends AppCompatActivity {
         setContentView(R.layout.activity_video_high_fps);
 
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        mCaptureHighSpeedVideoMode = CaptureHighSpeedVideoMode.newInstance();
 
         if (null == savedInstanceState) {
             getFragmentManager().beginTransaction()
-                    .replace(R.id.container, CaptureHighSpeedVideoMode.newInstance())
+                    .replace(R.id.container, mCaptureHighSpeedVideoMode)
                     .commit();
+        }
+
+        //Register to receive local broadcasts, which we'll be creating in the next step//
+        IntentFilter messageFilter = new IntentFilter(Intent.ACTION_SEND);
+        VideoHighFPSActivity.Receiver messageReceiver = new VideoHighFPSActivity.Receiver();
+        LocalBroadcastManager.getInstance(this).registerReceiver(messageReceiver, messageFilter);
+    }
+
+    //Define a nested class that extends BroadcastReceiver//
+    public class Receiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            //Upon receiving each message from the wearable, display the following text//
+            String message = intent.getStringExtra("message");
+            mServerDataModel = new ServerDataModel(message);
+            mCaptureHighSpeedVideoMode.saveToFiles(mServerDataModel);
+        }
+    }
+
+    public void talkClick(View v) {
+        //Sending a message can block the main UI thread, so use a new thread//
+        String message = "YAY";
+        new NewThread("/my_path", message).start();
+
+    }
+
+    class NewThread extends Thread {
+        String path;
+        String message;
+
+        //Constructor for sending information to the Data Layer//
+        NewThread(String p, String m) {
+            path = p;
+            message = m;
+        }
+
+        public void run() {
+            //Retrieve the connected devices, known as nodes//
+            Task<List<Node>> wearableList =
+                    Wearable.getNodeClient(getApplicationContext()).getConnectedNodes();
+            try {
+                List<Node> nodes = Tasks.await(wearableList);
+                for (Node node : nodes) {
+                    //Send the message//
+                    Task<Integer> sendMessageTask =
+                            Wearable.getMessageClient(VideoHighFPSActivity.this).sendMessage(node.getId(), path, message.getBytes());
+                    try {
+                        //Block on a task and get the result synchronously//
+                        Integer result = Tasks.await(sendMessageTask);
+                        //if the Task fails, then…..//
+                    } catch (Exception e) {
+                        e.printStackTrace(); }
+                }
+            } catch (Exception e) {
+                e.printStackTrace(); }
         }
     }
 }

@@ -41,8 +41,6 @@ public class ServerConnectionActivity extends AppCompatActivity implements Adapt
     // Debugging
     private static final boolean D = true;
 
-    public static ServerDataModel mServerDataModel = null;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         if(D) Log.e(TAG, "++ ON CREATE ++");
@@ -57,12 +55,6 @@ public class ServerConnectionActivity extends AppCompatActivity implements Adapt
         // Apply the adapter to the spinner
         spinner.setAdapter(adapter);
         spinner.setOnItemSelectedListener(this);
-
-        //Register to receive local broadcasts, which we'll be creating in the next step//
-
-        IntentFilter messageFilter = new IntentFilter(Intent.ACTION_SEND);
-        Receiver messageReceiver = new Receiver();
-        LocalBroadcastManager.getInstance(this).registerReceiver(messageReceiver, messageFilter);
     }
 
     @Override
@@ -114,58 +106,5 @@ public class ServerConnectionActivity extends AppCompatActivity implements Adapt
     public void okButtonPressed(View view) {
         Intent videoIntent = new Intent(this, VideoHighFPSActivity.class);
         startActivity(videoIntent);
-    }
-
-
-
-
-
-    //Define a nested class that extends BroadcastReceiver//
-    public class Receiver extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            //Upon receiving each message from the wearable, display the following text//
-            String message = intent.getStringExtra("message");
-            mServerDataModel = new ServerDataModel(message);
-        }
-    }
-
-    public void talkClick(View v) {
-        //Sending a message can block the main UI thread, so use a new thread//
-        String message = "YAY";
-        new NewThread("/my_path", message).start();
-
-    }
-
-    class NewThread extends Thread {
-        String path;
-        String message;
-
-        //Constructor for sending information to the Data Layer//
-        NewThread(String p, String m) {
-            path = p;
-            message = m;
-        }
-
-        public void run() {
-            //Retrieve the connected devices, known as nodes//
-            Task<List<Node>> wearableList =
-                    Wearable.getNodeClient(getApplicationContext()).getConnectedNodes();
-            try {
-                List<Node> nodes = Tasks.await(wearableList);
-                for (Node node : nodes) {
-                    //Send the message//
-                    Task<Integer> sendMessageTask =
-                            Wearable.getMessageClient(ServerConnectionActivity.this).sendMessage(node.getId(), path, message.getBytes());
-                    try {
-                        //Block on a task and get the result synchronously//
-                        Integer result = Tasks.await(sendMessageTask);
-                        //if the Task fails, then…..//
-                    } catch (Exception e) {
-                        e.printStackTrace(); }
-                }
-            } catch (Exception e) {
-                e.printStackTrace(); }
-        }
     }
 }

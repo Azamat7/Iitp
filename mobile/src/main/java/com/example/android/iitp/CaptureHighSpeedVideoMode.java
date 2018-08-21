@@ -830,26 +830,6 @@ public class CaptureHighSpeedVideoMode extends Fragment
     }
 
     private void stopRecordingVideo() {
-//        // UI
-//        mIsRecordingVideo = false;
-//        mRecButtonVideo.setText("Processing");
-//        // Stop recording
-//        try {
-//            mPreviewSessionHighSpeed.stopRepeating();
-//        } catch (CameraAccessException e) {
-//            e.printStackTrace();
-//        }
-//
-//        mMediaRecorder.stop();
-//        mMediaRecorder.reset();
-//        Activity activity = getActivity();
-//        if (null != activity) {
-//            Toast.makeText(activity, "Video saved: " + getVideoFile(activity),
-//                    Toast.LENGTH_SHORT).show();
-//        }
-//        startPreview();
-
-
         mRecButtonVideo.setEnabled(false);
         // UI
         mIsRecordingVideo = false;
@@ -873,21 +853,15 @@ public class CaptureHighSpeedVideoMode extends Fragment
                     Toast.LENGTH_SHORT).show();
         }
         startPreview();
+    }
+
+    public void saveToFiles(ServerDataModel mServerDataModel){
 
         File path = getContext().getExternalFilesDir(null);
         final File VideoData = new File(path, "VideoData.txt");
 
         final String filePath = videoFile.getPath();
 
-
-        // Todo: Handle this
-//        while(!(nClients == ServerConnectionActivity.mServerChatService.getIsAllTimeReceived())) {
-////            // wait
-////        }
-
-        while (ServerConnectionActivity.mServerDataModel == null){
-            //wait
-        }
 
         MediaMetadataRetriever mediaMetadataRetriever = new MediaMetadataRetriever();
         mediaMetadataRetriever.setDataSource(filePath);
@@ -936,29 +910,29 @@ public class CaptureHighSpeedVideoMode extends Fragment
 
             Bitmap savedBitmap;
 
-            long timeToSend = ServerConnectionActivity.mServerDataModel.getTargetTime();
-            ArrayList<String> accData = ServerConnectionActivity.mServerDataModel.getAccData();
-            ArrayList<String> horizontalAccelerationData = ServerConnectionActivity.mServerDataModel.getHorAccData();
+            long timeToSend = mServerDataModel.getTargetTime();
+            ArrayList<String> accData = mServerDataModel.getAccData();
+            ArrayList<String> horizontalAccelerationData = mServerDataModel.getHorAccData();
 
-            ArrayList<String> generalAccDataAlongX = ServerConnectionActivity.mServerDataModel.getGeneralAccDataAlongX();
-            ArrayList<String> generalAccDataAlongY = ServerConnectionActivity.mServerDataModel.getGeneralAccDataAlongY();
-            ArrayList<String> generalAccDataAlongZ = ServerConnectionActivity.mServerDataModel.getGeneralAccDataAlongZ();
+            ArrayList<String> generalAccDataAlongX = mServerDataModel.getGeneralAccDataAlongX();
+            ArrayList<String> generalAccDataAlongY = mServerDataModel.getGeneralAccDataAlongY();
+            ArrayList<String> generalAccDataAlongZ = mServerDataModel.getGeneralAccDataAlongZ();
 
-            ArrayList<String> gravityX = ServerConnectionActivity.mServerDataModel.getGravityX();
-            ArrayList<String> gravityY = ServerConnectionActivity.mServerDataModel.getGravityY();
-            ArrayList<String> gravityZ = ServerConnectionActivity.mServerDataModel.getGravityZ();
+            ArrayList<String> gravityX = mServerDataModel.getGravityX();
+            ArrayList<String> gravityY = mServerDataModel.getGravityY();
+            ArrayList<String> gravityZ = mServerDataModel.getGravityZ();
 
-            ArrayList<String> gyroscopeX = ServerConnectionActivity.mServerDataModel.getGyroscopeX();
-            ArrayList<String> gyroscopeY = ServerConnectionActivity.mServerDataModel.getGyroscopeY();
-            ArrayList<String> gyroscopeZ = ServerConnectionActivity.mServerDataModel.getGyroscopeZ();
+            ArrayList<String> gyroscopeX = mServerDataModel.getGyroscopeX();
+            ArrayList<String> gyroscopeY = mServerDataModel.getGyroscopeY();
+            ArrayList<String> gyroscopeZ = mServerDataModel.getGyroscopeZ();
 
 
 //            ArrayList<String> rotationMatrixDataPhoneList = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getRotationMatrix();
 
-            ArrayList<String> timeData = ServerConnectionActivity.mServerDataModel.getTimeData();
-            long jumpStart = ServerConnectionActivity.mServerDataModel.getTimeJumpStart();
-            long jumpEnd = ServerConnectionActivity.mServerDataModel.getTimeJumpEnd();
-            long dataStartTime = ServerConnectionActivity.mServerDataModel.getDataStartTime();
+            ArrayList<String> timeData = mServerDataModel.getTimeData();
+            long jumpStart = mServerDataModel.getTimeJumpStart();
+            long jumpEnd = mServerDataModel.getTimeJumpEnd();
+            long dataStartTime = mServerDataModel.getDataStartTime();
 
 
             long diff = timeToSend - (VideoActivity.videoStopTimeInMillis - duration);
