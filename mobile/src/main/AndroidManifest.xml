@@ -21,7 +21,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity">
+        <activity android:name=".ServerConnectionActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -31,10 +31,6 @@
         <activity android:name="com.example.android.iitp.VideoActivity" />
         <activity android:name="com.example.android.iitp.VideoHighFPSActivity" />
         <activity android:name="com.example.android.iitp.ImagePreviewActivity" />
-        <activity android:name="com.example.android.iitp.ipAddressActivity" />
-        <activity android:name="com.example.android.iitp.ServerConnectionActivity" />
-        <activity android:name="com.example.android.iitp.PingTestActivity" />
-        <activity android:name="com.example.android.iitp.PingReceiveActivity"></activity>
 
         <service
             android:name=".MessageService"
