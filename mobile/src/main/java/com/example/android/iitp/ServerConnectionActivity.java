@@ -1,12 +1,6 @@
 package com.example.android.iitp;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.os.Handler;
-import android.os.Message;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -15,15 +9,6 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.Toast;
-
-import com.google.android.gms.tasks.Task;
-import com.google.android.gms.tasks.Tasks;
-import com.google.android.gms.wearable.Node;
-import com.google.android.gms.wearable.Wearable;
-
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-
 
 /**
  * This activity will be invoked when Camera mode button on the Main activity is pressed.
@@ -34,16 +19,10 @@ import java.util.concurrent.ExecutionException;
 
 public class ServerConnectionActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener{
     private Spinner spinner;
-    private static final String TAG = "ServConnAct";
     private int nClients;
-    protected Handler myHandler;
-
-    // Debugging
-    private static final boolean D = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        if(D) Log.e(TAG, "++ ON CREATE ++");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_server_connection);
 
@@ -55,35 +34,6 @@ public class ServerConnectionActivity extends AppCompatActivity implements Adapt
         // Apply the adapter to the spinner
         spinner.setAdapter(adapter);
         spinner.setOnItemSelectedListener(this);
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        if(D) Log.e(TAG, "++ ON START ++");
-    }
-
-    @Override
-    public synchronized void onPause() {
-        super.onPause();
-        if(D) Log.e(TAG, "- ON PAUSE -");
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        if(D) Log.e(TAG, "-- ON STOP --");
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-    }
-
-    @Override
-    public synchronized void onResume() {
-        super.onResume();
-        if(D) Log.e(TAG, "+ ON RESUME +");
     }
 
     // when item from Spinner is selected

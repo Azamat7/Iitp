@@ -11,15 +11,12 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 
-import com.example.android.iitp.CaptureHighSpeedVideoMode;
-import com.example.android.iitp.R;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.Wearable;
 
 import java.util.List;
-import java.util.UUID;
 
 public class VideoHighFPSActivity extends AppCompatActivity {
 

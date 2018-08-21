@@ -1021,6 +1021,9 @@ public class CaptureHighSpeedVideoMode extends Fragment
         }
 
         Toast.makeText(getContext(), "All data is saved!", Toast.LENGTH_SHORT).show();
+
+        mRecButtonVideo.setEnabled(true);
+        mRecButtonVideo.setText("Start");
     }
 
     private void stopRecordingVideoOnPause() {
