@@ -131,6 +131,11 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
         if (!isDataRecording) {
             isDataRecording = true;
 
+            // sending ping message for data recording start from Client to Server phone.
+            String message = "Data Start Ping!";
+            String datapath = "/my_path";
+            new SendMessage(datapath, message).start();
+
             Toast.makeText(getApplicationContext(), "Data recording started!", Toast.LENGTH_SHORT).show();
 
             startTime = System.currentTimeMillis();
@@ -272,6 +277,13 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
 
             ArrayList<Float> accelerometerDataNew = new ArrayList<>(accelerometerData.subList(trimStartIndex, trimEndIndex));
             ArrayList<Long> timeDataNew = new ArrayList<>(timeData.subList(trimStartIndex, trimEndIndex));
+
+//        for (int i = 0; i < max_index - 10; i++) {
+//            if (accelerometerData.get(i) > min) {
+//                min = accelerometerData.get(i);
+//                min_index = i;
+//            }
+//        }
 
             // Get an array of peaks
             ArrayList<Integer> peaks = new ArrayList<Integer>();
@@ -434,51 +446,39 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
     public class Receiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-
-//Display the following when a new message is received//
-
+            //New message is received
             String message = intent.getStringExtra("message");
             //do something with message;
 
         }
     }
+
     class SendMessage extends Thread {
         String path;
         String message;
 
-//Constructor for sending information to the Data Layer//
-
+        //Constructor for sending Sensor Data to the Data Layer
         SendMessage(String p, String m) {
             path = p;
             message = m;
         }
 
         public void run() {
-//Retrieve the connected devices//
+            //Retrieve the connected devices
             Task<List<Node>> nodeListTask =
                     Wearable.getNodeClient(getApplicationContext()).getConnectedNodes();
             try {
-//Block on a task and get the result synchronously//
+                //Block on a task and get the result synchronously
                 List<Node> nodes = Tasks.await(nodeListTask);
                 for (Node node : nodes) {
-
-//Send the message///
+                    //Send the message
                     Task<Integer> sendMessageTask =
                             Wearable.getMessageClient(DataActivity.this).sendMessage(node.getId(), path, message.getBytes());
-
-                    try {
-                        Integer result = Tasks.await(sendMessageTask);
-//Handle the errors//
-
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                    Tasks.await(sendMessageTask);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
-
-
 }

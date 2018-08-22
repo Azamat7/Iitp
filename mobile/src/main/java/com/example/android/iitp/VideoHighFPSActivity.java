@@ -25,7 +25,8 @@ public class VideoHighFPSActivity extends AppCompatActivity {
     public static Bitmap action;
     public static SensorManager mSensorManager;
     private CaptureHighSpeedVideoMode mCaptureHighSpeedVideoMode;
-    private ServerDataModel mServerDataModel;
+    private SensorDataModel mSensorDataModel;
+    private long dataStartTimeInMillis;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,8 +54,12 @@ public class VideoHighFPSActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             //Upon receiving each message from the wearable, display the following text//
             String message = intent.getStringExtra("message");
-            mServerDataModel = new ServerDataModel(message);
-            mCaptureHighSpeedVideoMode.saveToFiles(mServerDataModel);
+            if (message.equals("Data Start Ping!")){
+                dataStartTimeInMillis = System.currentTimeMillis();
+            }else {
+                mSensorDataModel = new SensorDataModel(message,dataStartTimeInMillis);
+                mCaptureHighSpeedVideoMode.saveToFiles(mSensorDataModel);
+            }
         }
     }
 
@@ -85,12 +90,13 @@ public class VideoHighFPSActivity extends AppCompatActivity {
                     //Send the message//
                     Task<Integer> sendMessageTask =
                             Wearable.getMessageClient(VideoHighFPSActivity.this).sendMessage(node.getId(), path, message.getBytes());
-                    try {
-                        //Block on a task and get the result synchronously//
-                        Integer result = Tasks.await(sendMessageTask);
-                        //if the Task fails, then…..//
-                    } catch (Exception e) {
-                        e.printStackTrace(); }
+                    Tasks.await(sendMessageTask);
+//                    try {
+//                        //Block on a task and get the result synchronously//
+//                        Integer result =
+//                        //if the Task fails, then…..//
+//                    } catch (Exception e) {
+//                        e.printStackTrace(); }
                 }
             } catch (Exception e) {
                 e.printStackTrace(); }

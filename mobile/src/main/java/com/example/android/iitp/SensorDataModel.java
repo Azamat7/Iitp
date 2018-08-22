@@ -4,15 +4,12 @@ import android.util.Log;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class ServerDataModel {
+public class SensorDataModel {
 
     private long dataStartTimeInMillis;
     private long timeToSend;
 
     private String mIncomingData;
-
-    private boolean isMSDReceived = false;
-    private boolean isPingReceived = false;
 
     private ArrayList<String> generalAccDataAlongX;
     private ArrayList<String> generalAccDataAlongY;
@@ -32,8 +29,9 @@ public class ServerDataModel {
     private long timeJumpStart;
     private long timeJumpEnd;
 
-    public ServerDataModel(String incomingData){
+    public SensorDataModel(String incomingData, long dataStartTimeInMillis){
         this.mIncomingData = incomingData;
+        this.dataStartTimeInMillis = dataStartTimeInMillis;
         convertData();
     }
 
@@ -80,12 +78,6 @@ public class ServerDataModel {
     public ArrayList<String> getTimeData(){
         return timeDataArrayList;
     }
-
-    public boolean getIsTimeReceived() {
-        return isMSDReceived;
-    }
-
-
 
     private void convertData() {
 

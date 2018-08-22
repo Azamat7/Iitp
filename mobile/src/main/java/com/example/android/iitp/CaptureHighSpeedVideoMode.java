@@ -821,7 +821,7 @@ public class CaptureHighSpeedVideoMode extends Fragment
         final File VideoData = new File(path, "VideoData.txt");
     }
 
-    public void saveToFiles(ServerDataModel mServerDataModel){
+    public void saveToFiles(SensorDataModel mSensorDataModel){
         final String filePath = videoFile.getPath();
 
         MediaMetadataRetriever mediaMetadataRetriever = new MediaMetadataRetriever();
@@ -871,28 +871,28 @@ public class CaptureHighSpeedVideoMode extends Fragment
 
             Bitmap savedBitmap;
 
-            long timeToSend = mServerDataModel.getTargetTime();
-            ArrayList<String> accData = mServerDataModel.getAccData();
-            ArrayList<String> horizontalAccelerationData = mServerDataModel.getHorAccData();
+            long timeToSend = mSensorDataModel.getTargetTime();
+            ArrayList<String> accData = mSensorDataModel.getAccData();
+            ArrayList<String> horizontalAccelerationData = mSensorDataModel.getHorAccData();
 
-            ArrayList<String> generalAccDataAlongX = mServerDataModel.getGeneralAccDataAlongX();
-            ArrayList<String> generalAccDataAlongY = mServerDataModel.getGeneralAccDataAlongY();
-            ArrayList<String> generalAccDataAlongZ = mServerDataModel.getGeneralAccDataAlongZ();
+            ArrayList<String> generalAccDataAlongX = mSensorDataModel.getGeneralAccDataAlongX();
+            ArrayList<String> generalAccDataAlongY = mSensorDataModel.getGeneralAccDataAlongY();
+            ArrayList<String> generalAccDataAlongZ = mSensorDataModel.getGeneralAccDataAlongZ();
 
-            ArrayList<String> gravityX = mServerDataModel.getGravityX();
-            ArrayList<String> gravityY = mServerDataModel.getGravityY();
-            ArrayList<String> gravityZ = mServerDataModel.getGravityZ();
+            ArrayList<String> gravityX = mSensorDataModel.getGravityX();
+            ArrayList<String> gravityY = mSensorDataModel.getGravityY();
+            ArrayList<String> gravityZ = mSensorDataModel.getGravityZ();
 
-            ArrayList<String> gyroscopeX = mServerDataModel.getGyroscopeX();
-            ArrayList<String> gyroscopeY = mServerDataModel.getGyroscopeY();
-            ArrayList<String> gyroscopeZ = mServerDataModel.getGyroscopeZ();
+            ArrayList<String> gyroscopeX = mSensorDataModel.getGyroscopeX();
+            ArrayList<String> gyroscopeY = mSensorDataModel.getGyroscopeY();
+            ArrayList<String> gyroscopeZ = mSensorDataModel.getGyroscopeZ();
 
 //            ArrayList<String> rotationMatrixDataPhoneList = ServerConnectionActivity.mServerChatService.getConnectedThreads().get(i).getRotationMatrix();
 
-            ArrayList<String> timeData = mServerDataModel.getTimeData();
-            long jumpStart = mServerDataModel.getTimeJumpStart();
-            long jumpEnd = mServerDataModel.getTimeJumpEnd();
-            long dataStartTime = mServerDataModel.getDataStartTime();
+            ArrayList<String> timeData = mSensorDataModel.getTimeData();
+            long jumpStart = mSensorDataModel.getTimeJumpStart();
+            long jumpEnd = mSensorDataModel.getTimeJumpEnd();
+            long dataStartTime = mSensorDataModel.getDataStartTime();
 
 
             long diff = timeToSend - (VideoActivity.videoStopTimeInMillis - duration);
