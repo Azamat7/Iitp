@@ -25,27 +25,16 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class DataActivity extends WearableActivity implements Serializable, SensorEventListener{
-    // ./adb forward tcp:4444 localabstract:/adb-hub
-    // ./adb connect localhost:4444
     public static final float PEAK_THRESHOLD = 10;
     public static final long TRIM_THRESHOLD = 1500;
     private static final String TAG = "message";
 
     private Button startButton;
 
-    private boolean isTargetTimeSent = false;
-    private boolean isAccDataSent = false;
-    private boolean isTimeDataSent = false;
-
     private static SensorManager mSensorManager;
-
-    public static long dataStartTimeInMillis;
-    public static long dataStopTimeInMillis;
-    public static long timeToSend;
 
     private long endOfJump = 0;
     private long startOfJump = 0;
@@ -449,7 +438,6 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
             //New message is received
             String message = intent.getStringExtra("message");
             //do something with message;
-
         }
     }
 

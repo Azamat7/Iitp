@@ -41,8 +41,7 @@
             <intent-filter>
                 <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
 
-                //Specify your path, and a host for the filter. Again, I’m using a wildcard//
-
+                //Specify your path, and a host for the filter.
                 <data android:scheme="wear" android:host="*" android:pathPrefix="/my_path" />
 
             </intent-filter>

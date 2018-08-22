@@ -9,14 +9,6 @@ import android.hardware.SensorManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.View;
-
-import com.google.android.gms.tasks.Task;
-import com.google.android.gms.tasks.Tasks;
-import com.google.android.gms.wearable.Node;
-import com.google.android.gms.wearable.Wearable;
-
-import java.util.List;
 
 public class VideoHighFPSActivity extends AppCompatActivity {
 
@@ -48,58 +40,47 @@ public class VideoHighFPSActivity extends AppCompatActivity {
         LocalBroadcastManager.getInstance(this).registerReceiver(messageReceiver, messageFilter);
     }
 
-    //Define a nested class that extends BroadcastReceiver//
+    //Define a nested class that extends BroadcastReceiver
     public class Receiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            //Upon receiving each message from the wearable, display the following text//
+            //Upon receiving each message from the wearable, check it's type
             String message = intent.getStringExtra("message");
-            if (message.equals("Data Start Ping!")){
+            if (message.equals("Data Start Ping!")){ //Data start time
                 dataStartTimeInMillis = System.currentTimeMillis();
-            }else {
+            }else { //Sensor data
                 mSensorDataModel = new SensorDataModel(message,dataStartTimeInMillis);
                 mCaptureHighSpeedVideoMode.saveToFiles(mSensorDataModel);
             }
         }
     }
 
-    public void talkClick(View v) {
-        //Sending a message can block the main UI thread, so use a new thread//
-        String message = "YAY";
-        new NewThread("/my_path", message).start();
+    // To send message from phone to smartwatch
 
-    }
-
-    class NewThread extends Thread {
-        String path;
-        String message;
-
-        //Constructor for sending information to the Data Layer//
-        NewThread(String p, String m) {
-            path = p;
-            message = m;
-        }
-
-        public void run() {
-            //Retrieve the connected devices, known as nodes//
-            Task<List<Node>> wearableList =
-                    Wearable.getNodeClient(getApplicationContext()).getConnectedNodes();
-            try {
-                List<Node> nodes = Tasks.await(wearableList);
-                for (Node node : nodes) {
-                    //Send the message//
-                    Task<Integer> sendMessageTask =
-                            Wearable.getMessageClient(VideoHighFPSActivity.this).sendMessage(node.getId(), path, message.getBytes());
-                    Tasks.await(sendMessageTask);
-//                    try {
-//                        //Block on a task and get the result synchronously//
-//                        Integer result =
-//                        //if the Task fails, then…..//
-//                    } catch (Exception e) {
-//                        e.printStackTrace(); }
-                }
-            } catch (Exception e) {
-                e.printStackTrace(); }
-        }
-    }
+//    class NewThread extends Thread {
+//        String path;
+//        String message;
+//
+//        //Constructor for sending information to the Data Layer//
+//        NewThread(String p, String m) {
+//            path = p;
+//            message = m;
+//        }
+//
+//        public void run() {
+//            //Retrieve the connected devices, known as nodes//
+//            Task<List<Node>> wearableList =
+//                    Wearable.getNodeClient(getApplicationContext()).getConnectedNodes();
+//            try {
+//                List<Node> nodes = Tasks.await(wearableList);
+//                for (Node node : nodes) {
+//                    //Send the message//
+//                    Task<Integer> sendMessageTask =
+//                            Wearable.getMessageClient(VideoHighFPSActivity.this).sendMessage(node.getId(), path, message.getBytes());
+//                    Tasks.await(sendMessageTask);
+//                }
+//            } catch (Exception e) {
+//                e.printStackTrace(); }
+//        }
+//    }
 }

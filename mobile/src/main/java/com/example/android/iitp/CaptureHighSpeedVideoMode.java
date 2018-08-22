@@ -716,7 +716,6 @@ public class CaptureHighSpeedVideoMode extends Fragment
             assert texture != null;
             texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
             mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
-//            List<Surface> surfaces = new ArrayList<>();
             Surface previewSurface = new Surface(texture);
             surfaces.add(previewSurface);
             mPreviewBuilder.addTarget(previewSurface);
@@ -785,8 +784,6 @@ public class CaptureHighSpeedVideoMode extends Fragment
                 }
             }, 1000);
 
-
-
         } catch (IllegalStateException | IOException | CameraAccessException e) {
             e.printStackTrace();
         }
@@ -821,6 +818,7 @@ public class CaptureHighSpeedVideoMode extends Fragment
         final File VideoData = new File(path, "VideoData.txt");
     }
 
+    // Save all accumulated data to .txt files
     public void saveToFiles(SensorDataModel mSensorDataModel){
         final String filePath = videoFile.getPath();
 
@@ -900,9 +898,9 @@ public class CaptureHighSpeedVideoMode extends Fragment
             jumpStart = jumpStart - (VideoActivity.videoStopTimeInMillis - duration);
             jumpEnd = jumpEnd - (VideoActivity.videoStopTimeInMillis - duration);
 
-            //TODO: handle deviceID properly
+            //TODO: handle deviceID properly, in case of multiple devices
             //String deviceId = deviceName + "_" + address;
-            String deviceId = "SportWatch2";
+            String deviceId = "LG Watch Sport";
 
             File deviceFolder = new File(myDir.getPath() + "/" + deviceId);
             deviceFolder.mkdirs();
