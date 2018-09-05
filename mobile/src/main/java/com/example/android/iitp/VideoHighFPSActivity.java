@@ -9,6 +9,7 @@ import android.hardware.SensorManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
@@ -53,7 +54,12 @@ public class VideoHighFPSActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             //Upon receiving each message from the wearable, check it's type
             String message = intent.getStringExtra("message");
-            if (message.equals("Data Start Ping!")){ //Data start time
+
+            Log.d("PingTest",message);
+            if (message.equals("Ping")) {
+                String datapath = "/my_path";
+                new NewThread(datapath, message).start();
+            }else if (message.equals("Data Start Ping!")){ //Data start time
                 dataStartTimeInMillis = System.currentTimeMillis();
             }else { //Sensor data
                 mSensorDataModel = new SensorDataModel(message,dataStartTimeInMillis);

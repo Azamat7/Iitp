@@ -62,6 +62,9 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
 
     private long startTime;
 
+    private long pingSent;
+    private int totalPings = 0;
+
     //ArrayList<float[]> rotationMatrixData;
 
     @Override
@@ -136,7 +139,15 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
             //mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_FASTEST);
             //mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_HEART_BEAT), SensorManager.SENSOR_DELAY_FASTEST);
             //mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE), SensorManager.SENSOR_DELAY_FASTEST);
+            sendPing();
         }
+    }
+
+    private void sendPing(){
+        String msd = "Ping";
+        String datapath = "/my_path";
+        pingSent = System.currentTimeMillis();
+        new SendMessage(datapath, msd).start();
     }
 
     private float accelerometer_x, accelerometer_y, accelerometer_z;
@@ -437,6 +448,14 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
         public void onReceive(Context context, Intent intent) {
             //New message is received
             String message = intent.getStringExtra("message");
+            long endTime = System.currentTimeMillis();
+            Log.d("PingTest",String.valueOf(endTime - pingSent));
+
+            totalPings++;
+            if (totalPings<200){
+                sendPing();
+            }
+
             //do something with message;
         }
     }
