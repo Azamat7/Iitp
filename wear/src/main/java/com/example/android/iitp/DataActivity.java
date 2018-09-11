@@ -78,8 +78,7 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
             @Override
             public void onClick(View v) {
                 if (!isDataRecording) {
-                    startButton.setText("Stop");
-                    onStartButton();
+                    sendPing();
                 } else {
                     startButton.setText("Start");
                     onStopButton();
@@ -117,6 +116,7 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
         Receiver messageReceiver = new Receiver();
 
         LocalBroadcastManager.getInstance(this).registerReceiver(messageReceiver, newFilter);
+
     }
 
     private void onStartButton() {
@@ -139,7 +139,7 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
             //mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_FASTEST);
             //mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_HEART_BEAT), SensorManager.SENSOR_DELAY_FASTEST);
             //mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE), SensorManager.SENSOR_DELAY_FASTEST);
-            sendPing();
+
         }
     }
 
@@ -239,6 +239,7 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
 
     private void onStopButton() {
         if (isDataRecording) {
+            mSensorManager.unregisterListener(this);
             isDataRecording = false;
 
             startButton.setText("Blocked");
@@ -400,6 +401,7 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
         new SendMessage(datapath, msd).start();
 
         Log.e(TAG, "MSD has been sent!");
+        Log.d("alpha57","Send the message");
     }
 
 
@@ -452,11 +454,12 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
             Log.d("PingTest",String.valueOf(endTime - pingSent));
 
             totalPings++;
-            if (totalPings<200){
+            if (totalPings<20){
                 sendPing();
+            }else{
+                startButton.setText("Stop");
+                onStartButton();
             }
-
-            //do something with message;
         }
     }
 

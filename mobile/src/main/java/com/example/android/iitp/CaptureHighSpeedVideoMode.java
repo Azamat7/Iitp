@@ -112,6 +112,8 @@ public class CaptureHighSpeedVideoMode extends Fragment
     private String currentDateAndTime;
     private SensorEventListener mSensorEventListener;
     private float[] rotationMatrix;
+    private SensorDataModel mSensorDataModel;
+    private long videoStopTimeInMillis;
 
 
     /**
@@ -631,8 +633,8 @@ public class CaptureHighSpeedVideoMode extends Fragment
     }
 
     private void setUpCaptureRequestBuilder(CaptureRequest.Builder builder) {
-//        Range<Integer> fpsRange = Range.create(240, 240);
-        Range<Integer> fpsRange = getHighestFpsRange(availableFpsRange);
+        Range<Integer> fpsRange = Range.create(240, 240);
+//        Range<Integer> fpsRange = getHighestFpsRange(availableFpsRange);
         builder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRange);
 
     }
@@ -793,7 +795,7 @@ public class CaptureHighSpeedVideoMode extends Fragment
         mRecButtonVideo.setEnabled(false);
         // UI
         mIsRecordingVideo = false;
-        VideoActivity.videoStopTimeInMillis = System.currentTimeMillis();
+        videoStopTimeInMillis = System.currentTimeMillis();
         mRecButtonVideo.setText("Processing...");
         // Stop recording
         try {
@@ -802,8 +804,8 @@ public class CaptureHighSpeedVideoMode extends Fragment
             e.printStackTrace();
         }
 
-        new TimeVideoStop(getActivity()).execute();
-        new TimeServer(getActivity()).execute();
+        //new TimeVideoStop(getActivity()).execute();
+        //new TimeServer(getActivity()).execute();
 
         mMediaRecorder.stop();
         mMediaRecorder.reset();
@@ -816,6 +818,13 @@ public class CaptureHighSpeedVideoMode extends Fragment
 
         File path = getContext().getExternalFilesDir(null);
         final File VideoData = new File(path, "VideoData.txt");
+        Log.d("alpha57","savetoFiles");
+        saveToFiles(mSensorDataModel);
+    }
+
+    public void setSensorDataModel(SensorDataModel sensorDataModel){
+        Log.d("alpha57","SensorDataModel is created");
+        mSensorDataModel = sensorDataModel;
     }
 
     // Save all accumulated data to .txt files
@@ -893,10 +902,10 @@ public class CaptureHighSpeedVideoMode extends Fragment
             long dataStartTime = mSensorDataModel.getDataStartTime();
 
 
-            long diff = timeToSend - (VideoActivity.videoStopTimeInMillis - duration);
+            long diff = timeToSend - (videoStopTimeInMillis - duration);
             averageTime += diff;
-            jumpStart = jumpStart - (VideoActivity.videoStopTimeInMillis - duration);
-            jumpEnd = jumpEnd - (VideoActivity.videoStopTimeInMillis - duration);
+            jumpStart = jumpStart - (videoStopTimeInMillis - duration);
+            jumpEnd = jumpEnd - (videoStopTimeInMillis - duration);
 
             //TODO: handle deviceID properly, in case of multiple devices
             //String deviceId = deviceName + "_" + address;
@@ -915,7 +924,7 @@ public class CaptureHighSpeedVideoMode extends Fragment
 
             try {
                 BufferedWriter out = new BufferedWriter(new FileWriter(jumpStats, true), 1024);
-                String entry = deviceId + ", " + diff + ", " + jumpStart + ", " + jumpEnd + ", " + duration + ", " + VideoActivity.videoStopTimeInMillis + ", " + dataStartTime + ", " + timeData.get(timeData.size() - 1) + "\n";
+                String entry = deviceId + ", " + diff + ", " + jumpStart + ", " + jumpEnd + ", " + duration + ", " + videoStopTimeInMillis + ", " + dataStartTime + ", " + timeData.get(timeData.size() - 1) + "\n";
                 out.write(entry);
                 out.close();
             } catch (IOException e) {

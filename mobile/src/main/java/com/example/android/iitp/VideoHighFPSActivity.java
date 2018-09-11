@@ -63,7 +63,8 @@ public class VideoHighFPSActivity extends AppCompatActivity {
                 dataStartTimeInMillis = System.currentTimeMillis();
             }else { //Sensor data
                 mSensorDataModel = new SensorDataModel(message,dataStartTimeInMillis);
-                mCaptureHighSpeedVideoMode.saveToFiles(mSensorDataModel);
+                Log.d("alpha57","create SensorDataModel");
+                mCaptureHighSpeedVideoMode.setSensorDataModel(mSensorDataModel);
             }
         }
     }
