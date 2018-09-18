@@ -26,7 +26,9 @@ public class VideoHighFPSActivity extends AppCompatActivity {
     public static SensorManager mSensorManager;
     private CaptureHighSpeedVideoMode mCaptureHighSpeedVideoMode;
     private SensorDataModel mSensorDataModel;
-    private long dataStartTimeInMillis;
+    private long dataStartTimeInMillisWear1;
+    private long dataStartTimeInMillisWear2;
+    private boolean wearCame = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,16 +57,38 @@ public class VideoHighFPSActivity extends AppCompatActivity {
             //Upon receiving each message from the wearable, check it's type
             String message = intent.getStringExtra("message");
 
-            Log.d("PingTest",message);
+
             if (message.equals("Ping")) {
-                String datapath = "/my_path";
+                String datapath;
+                if (wearCame){
+                    datapath = "/my_path_"+"wear2";
+                }else{
+                    datapath = "/my_path_"+"wear1";
+                    wearCame = true;
+                }
                 new NewThread(datapath, message).start();
-            }else if (message.equals("Data Start Ping!")){ //Data start time
-                dataStartTimeInMillis = System.currentTimeMillis();
+            }else if (message.split(" ")[1]=="wear1"){
+                String datapath = "/my_path_"+"wear1";
+                new NewThread(datapath, message).start();
+            }else if (message.split(" ")[1]=="wear2"){
+                String datapath = "/my_path_"+"wear2";
+                new NewThread(datapath, message).start();
+            }else if (message.split(" ")[0].equals("Data")){ //Data start time
+                if (message.split(" ")[3].equals("wear1")) {
+                    dataStartTimeInMillisWear1 = System.currentTimeMillis();
+                }else{
+                    dataStartTimeInMillisWear2 = System.currentTimeMillis();
+                }
             }else { //Sensor data
-                mSensorDataModel = new SensorDataModel(message,dataStartTimeInMillis);
-                Log.d("alpha57","create SensorDataModel");
-                mCaptureHighSpeedVideoMode.setSensorDataModel(mSensorDataModel);
+                String[] elements = message.split(":");
+                String wearType = elements[15];
+                if (wearType=="wear1"){
+                    mSensorDataModel = new SensorDataModel(message,dataStartTimeInMillisWear1);
+                    mCaptureHighSpeedVideoMode.setSensorDataModel1(mSensorDataModel);
+                }else{
+                    mSensorDataModel = new SensorDataModel(message,dataStartTimeInMillisWear2);
+                    mCaptureHighSpeedVideoMode.setSensorDataModel2(mSensorDataModel);
+                }
             }
         }
     }

@@ -29,6 +29,8 @@ public class SensorDataModel {
     private long timeJumpStart;
     private long timeJumpEnd;
 
+    private String wearID;
+
     public SensorDataModel(String incomingData, long dataStartTimeInMillis){
         this.mIncomingData = incomingData;
         this.dataStartTimeInMillis = dataStartTimeInMillis;
@@ -79,6 +81,10 @@ public class SensorDataModel {
         return timeDataArrayList;
     }
 
+    public String getWearID(){
+        return wearID;
+    }
+
     private void convertData() {
 
         String[] elements = mIncomingData.split(":");
@@ -102,6 +108,8 @@ public class SensorDataModel {
         String strJumpStart = elements[13];
         String strJumpEnd = elements[14];
         strJumpEnd = strJumpEnd.substring(0, strJumpEnd.length() - 1);
+
+        wearID = elements[15];
 
         timeToSend = Long.valueOf(strTargetTime);
         timeToSend += dataStartTimeInMillis;

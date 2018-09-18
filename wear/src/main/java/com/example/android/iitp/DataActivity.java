@@ -65,6 +65,8 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
     private long pingSent;
     private int totalPings = 0;
 
+    private String wearID = "";
+
     //ArrayList<float[]> rotationMatrixData;
 
     @Override
@@ -124,7 +126,7 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
             isDataRecording = true;
 
             // sending ping message for data recording start from Client to Server phone.
-            String message = "Data Start Ping!";
+            String message = "Data Start Ping!"+" "+wearID;
             String datapath = "/my_path";
             new SendMessage(datapath, message).start();
 
@@ -144,8 +146,8 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
     }
 
     private void sendPing(){
-        String msd = "Ping";
-        String datapath = "/my_path";
+        String msd = "Ping "+wearID;
+        String datapath = "/my_path"+wearID;
         pingSent = System.currentTimeMillis();
         new SendMessage(datapath, msd).start();
     }
@@ -393,7 +395,7 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
                 + delimiter + generalAccelerationAlongXList + delimiter + generalAccelerationAlongYList + delimiter
                 + generalAccelerationAlongZList + delimiter + gravityXList + delimiter + gravityYList + delimiter
                 + gravityZList + delimiter + gyroscopeXList + delimiter + gyroscopeYList + delimiter
-                + gyroscopeZList + delimiter + timeDataStringList + delimiter + jumpStartString + delimiter + jumpEndString + "#";
+                + gyroscopeZList + delimiter + timeDataStringList + delimiter + jumpStartString + delimiter + jumpEndString + delimiter +wearID+"#";
 
         Log.e(TAG, "msd string length: "+msd.length());
 
@@ -448,10 +450,21 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
     public class Receiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
+
             //New message is received
             String message = intent.getStringExtra("message");
             long endTime = System.currentTimeMillis();
             Log.d("PingTest",String.valueOf(endTime - pingSent));
+
+
+            if (wearID==""){
+                wearID = message.split("_")[2];
+            }else{
+                if (wearID!=message.split("_")[2]){
+                    return;
+                }
+            }
+
 
             totalPings++;
             if (totalPings<20){

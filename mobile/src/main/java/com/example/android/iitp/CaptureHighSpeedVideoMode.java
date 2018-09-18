@@ -112,7 +112,8 @@ public class CaptureHighSpeedVideoMode extends Fragment
     private String currentDateAndTime;
     private SensorEventListener mSensorEventListener;
     private float[] rotationMatrix;
-    private SensorDataModel mSensorDataModel;
+    private SensorDataModel mSensorDataModel1;
+    private SensorDataModel mSensorDataModel2;
     private long videoStopTimeInMillis;
 
 
@@ -819,12 +820,18 @@ public class CaptureHighSpeedVideoMode extends Fragment
         File path = getContext().getExternalFilesDir(null);
         final File VideoData = new File(path, "VideoData.txt");
         Log.d("alpha57","savetoFiles");
-        saveToFiles(mSensorDataModel);
+        saveToFiles(mSensorDataModel1);
+        saveToFiles(mSensorDataModel2);
     }
 
-    public void setSensorDataModel(SensorDataModel sensorDataModel){
+    public void setSensorDataModel1(SensorDataModel sensorDataModel){
         Log.d("alpha57","SensorDataModel is created");
-        mSensorDataModel = sensorDataModel;
+        mSensorDataModel1 = sensorDataModel;
+    }
+
+    public void setSensorDataModel2(SensorDataModel sensorDataModel){
+        Log.d("alpha57","SensorDataModel is created");
+        mSensorDataModel2 = sensorDataModel;
     }
 
     // Save all accumulated data to .txt files
@@ -909,7 +916,7 @@ public class CaptureHighSpeedVideoMode extends Fragment
 
             //TODO: handle deviceID properly, in case of multiple devices
             //String deviceId = deviceName + "_" + address;
-            String deviceId = "LG Watch Sport";
+            String deviceId = mSensorDataModel.getWearID();
 
             File deviceFolder = new File(myDir.getPath() + "/" + deviceId);
             deviceFolder.mkdirs();
