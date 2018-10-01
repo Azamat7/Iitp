@@ -29,6 +29,7 @@ public class VideoHighFPSActivity extends AppCompatActivity {
     private long dataStartTimeInMillisWear1;
     private long dataStartTimeInMillisWear2;
     private boolean wearCame = false;
+    private int nClients;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,6 +45,9 @@ public class VideoHighFPSActivity extends AppCompatActivity {
                     .commit();
         }
 
+        Intent intent = getIntent();
+        nClients = intent.getExtras().getInt("nClients");
+
         //Register to receive local broadcasts, which we'll be creating in the next step//
         IntentFilter messageFilter = new IntentFilter(Intent.ACTION_SEND);
         VideoHighFPSActivity.Receiver messageReceiver = new VideoHighFPSActivity.Receiver();
@@ -57,20 +61,23 @@ public class VideoHighFPSActivity extends AppCompatActivity {
             //Upon receiving each message from the wearable, check it's type
             String message = intent.getStringExtra("message");
 
+            Log.d("upgrade01",message);
 
-            if (message.equals("Ping")) {
+            if (message.equals("Ping ")) {
                 String datapath;
                 if (wearCame){
+                    Log.d("upgrade01","2");
                     datapath = "/my_path_"+"wear2";
                 }else{
+                    Log.d("upgrade01","1");
                     datapath = "/my_path_"+"wear1";
                     wearCame = true;
                 }
                 new NewThread(datapath, message).start();
-            }else if (message.split(" ")[1]=="wear1"){
+            }else if (message.split(" ")[1].equals("wear1")){
                 String datapath = "/my_path_"+"wear1";
                 new NewThread(datapath, message).start();
-            }else if (message.split(" ")[1]=="wear2"){
+            }else if (message.split(" ")[1].equals("wear2")){
                 String datapath = "/my_path_"+"wear2";
                 new NewThread(datapath, message).start();
             }else if (message.split(" ")[0].equals("Data")){ //Data start time
@@ -80,12 +87,18 @@ public class VideoHighFPSActivity extends AppCompatActivity {
                     dataStartTimeInMillisWear2 = System.currentTimeMillis();
                 }
             }else { //Sensor data
+
+                mCaptureHighSpeedVideoMode.setClients(nClients);
+
                 String[] elements = message.split(":");
                 String wearType = elements[15];
-                if (wearType=="wear1"){
+                Log.d("upgrade01",wearType);
+                if (wearType.equals("wear1#")){
+                    Log.d("upgrade01","1");
                     mSensorDataModel = new SensorDataModel(message,dataStartTimeInMillisWear1);
                     mCaptureHighSpeedVideoMode.setSensorDataModel1(mSensorDataModel);
                 }else{
+                    Log.d("upgrade01","2");
                     mSensorDataModel = new SensorDataModel(message,dataStartTimeInMillisWear2);
                     mCaptureHighSpeedVideoMode.setSensorDataModel2(mSensorDataModel);
                 }

@@ -55,6 +55,7 @@ public class ServerConnectionActivity extends AppCompatActivity implements Adapt
     // When OK button is pressed
     public void okButtonPressed(View view) {
         Intent videoIntent = new Intent(this, VideoHighFPSActivity.class);
+        videoIntent.putExtra("nClients",nClients);
         startActivity(videoIntent);
     }
 }

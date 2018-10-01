@@ -460,7 +460,7 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
             if (wearID==""){
                 wearID = message.split("_")[2];
             }else{
-                if (wearID!=message.split("_")[2]){
+                if (!wearID.equals(message.split("_")[2])){
                     return;
                 }
             }

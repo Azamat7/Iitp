@@ -115,6 +115,7 @@ public class CaptureHighSpeedVideoMode extends Fragment
     private SensorDataModel mSensorDataModel1;
     private SensorDataModel mSensorDataModel2;
     private long videoStopTimeInMillis;
+    private int nClients;
 
 
     /**
@@ -821,7 +822,9 @@ public class CaptureHighSpeedVideoMode extends Fragment
         final File VideoData = new File(path, "VideoData.txt");
         Log.d("alpha57","savetoFiles");
         saveToFiles(mSensorDataModel1);
-        saveToFiles(mSensorDataModel2);
+        if (nClients == 2) {
+            saveToFiles(mSensorDataModel2);
+        }
     }
 
     public void setSensorDataModel1(SensorDataModel sensorDataModel){
@@ -832,6 +835,10 @@ public class CaptureHighSpeedVideoMode extends Fragment
     public void setSensorDataModel2(SensorDataModel sensorDataModel){
         Log.d("alpha57","SensorDataModel is created");
         mSensorDataModel2 = sensorDataModel;
+    }
+
+    public void setClients(int n){
+        nClients = n;
     }
 
     // Save all accumulated data to .txt files
