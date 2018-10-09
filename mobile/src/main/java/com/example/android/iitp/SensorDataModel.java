@@ -114,6 +114,7 @@ public class SensorDataModel {
         //strJumpEnd = strJumpEnd.substring(0, strJumpEnd.length() - 1);
 
         wearID = elements[15];
+        wearID = wearID.substring(0,wearID.length() - 1);
 
         timeToSend = Long.valueOf(strTargetTime);
         timeToSend += dataStartTimeInMillis;

@@ -821,7 +821,8 @@ public class CaptureHighSpeedVideoMode extends Fragment
 
         File path = getContext().getExternalFilesDir(null);
         final File VideoData = new File(path, "VideoData.txt");
-        Log.d("alpha57","savetoFiles");
+
+        nClientsCame = 0;
     }
 
     public void setSensorDataModel1(SensorDataModel sensorDataModel){

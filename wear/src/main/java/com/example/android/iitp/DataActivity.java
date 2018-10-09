@@ -8,6 +8,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Build;
 import android.support.v4.content.LocalBroadcastManager;
 import android.os.Bundle;
 import android.support.wearable.activity.WearableActivity;
@@ -65,7 +66,7 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
     private long pingSent;
     private int totalPings = 0;
 
-    private String wearID = "";
+    private String wearID = Build.ID;
 
     //ArrayList<float[]> rotationMatrixData;
 
@@ -126,7 +127,7 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
             isDataRecording = true;
 
             // sending ping message for data recording start from Client to Server phone.
-            String message = "Data Start Ping!"+" "+wearID;
+            String message = "Data Start Ping! "+wearID;
             String datapath = "/my_path";
             new SendMessage(datapath, message).start();
 
@@ -148,7 +149,7 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
     private void sendPing(){
         Log.d("upgrade01","Ping sent!");
         String msd = "Ping "+wearID;
-        String datapath = "/my_path"+wearID;
+        String datapath = "/my_path";
         pingSent = System.currentTimeMillis();
         new SendMessage(datapath, msd).start();
     }
@@ -461,17 +462,8 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
             Log.d("PingTest",String.valueOf(endTime - pingSent));
 
 
-            if (wearID==""){
-                wearID = message.split("_")[2];
-            }else{
-                if (!wearID.equals(message.split("_")[2])){
-                    return;
-                }
-            }
-
-
             totalPings++;
-            if (totalPings<40){
+            if (totalPings<20){
                 sendPing();
             }else{
                 startButton.setText("Stop");
