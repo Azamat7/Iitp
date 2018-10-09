@@ -146,6 +146,7 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
     }
 
     private void sendPing(){
+        Log.d("upgrade01","Ping sent!");
         String msd = "Ping "+wearID;
         String datapath = "/my_path"+wearID;
         pingSent = System.currentTimeMillis();
@@ -351,6 +352,9 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
             startOfJump = timeDataNew.get(startOfJumpIndex);
             endOfJump = timeDataNew.get(endOfJumpIndex);
 
+            Log.d("alpha34",String.valueOf(startOfJump));
+            Log.d("alpha34",String.valueOf(endOfJump));
+
             // sending target time (timeTosend) to Server.
             tTarget = (startOfJump + endOfJump) / 2;
 
@@ -467,7 +471,7 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
 
 
             totalPings++;
-            if (totalPings<20){
+            if (totalPings<40){
                 sendPing();
             }else{
                 startButton.setText("Stop");

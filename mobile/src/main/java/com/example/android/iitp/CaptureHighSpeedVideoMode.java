@@ -116,6 +116,7 @@ public class CaptureHighSpeedVideoMode extends Fragment
     private SensorDataModel mSensorDataModel2;
     private long videoStopTimeInMillis;
     private int nClients;
+    private int nClientsCame = 0;
 
 
     /**
@@ -821,20 +822,18 @@ public class CaptureHighSpeedVideoMode extends Fragment
         File path = getContext().getExternalFilesDir(null);
         final File VideoData = new File(path, "VideoData.txt");
         Log.d("alpha57","savetoFiles");
-        saveToFiles(mSensorDataModel1);
-        if (nClients == 2) {
-            saveToFiles(mSensorDataModel2);
-        }
     }
 
     public void setSensorDataModel1(SensorDataModel sensorDataModel){
         Log.d("alpha57","SensorDataModel is created");
         mSensorDataModel1 = sensorDataModel;
+        saveToFiles(mSensorDataModel1);
     }
 
     public void setSensorDataModel2(SensorDataModel sensorDataModel){
         Log.d("alpha57","SensorDataModel is created");
         mSensorDataModel2 = sensorDataModel;
+        saveToFiles(mSensorDataModel2);
     }
 
     public void setClients(int n){
@@ -1001,10 +1000,16 @@ public class CaptureHighSpeedVideoMode extends Fragment
             }
         }
 
-        Toast.makeText(getActivity(), "All data is saved!", Toast.LENGTH_SHORT).show();
+        nClientsCame += 1;
 
-        mRecButtonVideo.setEnabled(true);
-        mRecButtonVideo.setText("Start");
+
+        if (nClients == nClientsCame) {
+            Toast.makeText(getActivity(), "All data is saved!", Toast.LENGTH_SHORT).show();
+            mRecButtonVideo.setEnabled(true);
+            mRecButtonVideo.setText("Start");
+        }
+
+
     }
 
     private void stopRecordingVideoOnPause() {

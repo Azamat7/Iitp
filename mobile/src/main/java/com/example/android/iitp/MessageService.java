@@ -12,23 +12,39 @@ public class MessageService extends WearableListenerService {
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
 
-        //...retrieve the message
-        final String message = new String(messageEvent.getData());
-        Intent messageIntent = new Intent();
-        messageIntent.setAction(Intent.ACTION_SEND);
-        messageIntent.putExtra("message", message);
-
-        //Broadcast the received Data Layer messages locally
-        LocalBroadcastManager.getInstance(this).sendBroadcast(messageIntent);
+        Log.d("upgrade01",messageEvent.getPath());
 
         //If the message’s path equals "/my_path"...
-//        if (messageEvent.getPath().equals("/my_path")) {
-//
-//
-//        }
-//        else {
-//            super.onMessageReceived(messageEvent);
-//        }
+        if (messageEvent.getPath().equals("/my_path")) {
+            //...retrieve the message
+            final String message = new String(messageEvent.getData());
+            Intent messageIntent = new Intent();
+            messageIntent.setAction(Intent.ACTION_SEND);
+            messageIntent.putExtra("message", message);
+
+            //Broadcast the received Data Layer messages locally
+            LocalBroadcastManager.getInstance(this).sendBroadcast(messageIntent);
+        }else if (messageEvent.getPath().equals("/my_pathwear1")) {
+            //...retrieve the message
+            final String message = new String(messageEvent.getData());
+            Intent messageIntent = new Intent();
+            messageIntent.setAction(Intent.ACTION_SEND);
+            messageIntent.putExtra("message", message);
+
+            //Broadcast the received Data Layer messages locally
+            LocalBroadcastManager.getInstance(this).sendBroadcast(messageIntent);
+        }else if (messageEvent.getPath().equals("/my_pathwear2")) {
+            //...retrieve the message
+            final String message = new String(messageEvent.getData());
+            Intent messageIntent = new Intent();
+            messageIntent.setAction(Intent.ACTION_SEND);
+            messageIntent.putExtra("message", message);
+
+            //Broadcast the received Data Layer messages locally
+            LocalBroadcastManager.getInstance(this).sendBroadcast(messageIntent);
+        }else {
+            super.onMessageReceived(messageEvent);
+        }
     }
 
 }

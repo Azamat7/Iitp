@@ -107,7 +107,11 @@ public class SensorDataModel {
         String strTimeData = elements[12];
         String strJumpStart = elements[13];
         String strJumpEnd = elements[14];
-        strJumpEnd = strJumpEnd.substring(0, strJumpEnd.length() - 1);
+
+        Log.d("alpha34",strJumpStart);
+        Log.d("alpha34",strJumpEnd);
+
+        //strJumpEnd = strJumpEnd.substring(0, strJumpEnd.length() - 1);
 
         wearID = elements[15];
 
