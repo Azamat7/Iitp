@@ -81,6 +81,8 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
             @Override
             public void onClick(View v) {
                 if (!isDataRecording) {
+                    startButton.setText("Pings...");
+                    startButton.setEnabled(false);
                     sendPing();
                 } else {
                     startButton.setText("Start");
@@ -467,6 +469,7 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
                 sendPing();
             }else{
                 startButton.setText("Stop");
+                startButton.setEnabled(true);
                 onStartButton();
             }
         }
