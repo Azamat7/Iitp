@@ -1,5 +1,6 @@
 package com.example.android.iitp;
 
+import android.bluetooth.BluetoothAdapter;
 import android.content.Intent;
 import android.os.Build;
 import android.support.v4.content.LocalBroadcastManager;
@@ -8,7 +9,8 @@ import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.WearableListenerService;
 
 public class MessageService extends WearableListenerService {
-    private String wearID = Build.ID;
+    BluetoothAdapter myDevice = BluetoothAdapter.getDefaultAdapter();
+    private String wearID = myDevice.getName().split(" ")[3];
 
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {

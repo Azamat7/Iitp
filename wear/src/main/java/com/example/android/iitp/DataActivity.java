@@ -1,19 +1,26 @@
 package com.example.android.iitp;
 
+import android.Manifest;
+import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Build;
+import android.provider.Settings;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.os.Bundle;
 import android.support.wearable.activity.WearableActivity;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.Toast;
 
@@ -66,14 +73,17 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
     private long pingSent;
     private int totalPings = 0;
 
-    private String wearID = Build.ID;
-
+    BluetoothAdapter myDevice = BluetoothAdapter.getDefaultAdapter();
+    private String wearID = myDevice.getName().split(" ")[3];
     //ArrayList<float[]> rotationMatrixData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_data);
+
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        Log.e("Model:",wearID);
 
         startButton = (Button) findViewById(R.id.startButton);
 
@@ -355,9 +365,6 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
             startOfJump = timeDataNew.get(startOfJumpIndex);
             endOfJump = timeDataNew.get(endOfJumpIndex);
 
-            Log.d("alpha34",String.valueOf(startOfJump));
-            Log.d("alpha34",String.valueOf(endOfJump));
-
             // sending target time (timeTosend) to Server.
             tTarget = (startOfJump + endOfJump) / 2;
 
@@ -410,7 +417,6 @@ public class DataActivity extends WearableActivity implements Serializable, Sens
         new SendMessage(datapath, msd).start();
 
         Log.e(TAG, "MSD has been sent!");
-        Log.d("alpha57","Send the message");
     }
 
 

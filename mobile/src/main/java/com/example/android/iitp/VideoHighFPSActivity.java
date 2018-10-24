@@ -64,6 +64,7 @@ public class VideoHighFPSActivity extends AppCompatActivity {
             String message = intent.getStringExtra("message");
 
             //Log.d("upgrade01",message);
+            Log.e("MESSGGE",message);
 
             if (message.split(" ")[0].equals("Ping")) {
                 Log.d("upgrade01",message.split(" ")[1]);
@@ -81,8 +82,6 @@ public class VideoHighFPSActivity extends AppCompatActivity {
                 }
                 new NewThread(datapath, message).start();
             }else if (message.split(" ")[0].equals("Data")){ //Data start time
-                //Log.d("upgrade01",message);
-                //Log.d("upgrade01",message.split(" ")[3]);
                 if (message.split(" ")[3].equals(wear1)) {
                     dataStartTimeInMillisWear1 = System.currentTimeMillis();
                 }else{
